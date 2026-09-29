@@ -53,17 +53,31 @@
     color: #fff;
     border-color: #0969da;
   }
+  .nav a.active {
+    background: #0969da;
+    color: #fff;
+    border-color: #0969da;
+  }
+
+  /* 返回 */
+  .back {
+    display: inline-block;
+    margin: 22px 0 0;
+    font-size: 14px;
+    color: #0969da;
+    text-decoration: none;
+  }
+  .back:hover { text-decoration: underline; }
 
   /* 分组标题 */
   .group-title {
     font-size: 20px;
-    margin: 40px 0 14px;
+    margin: 14px 0 14px;
     padding-bottom: 8px;
     border-bottom: 2px solid #d0d7de;
     display: flex;
     align-items: baseline;
     gap: 10px;
-    scroll-margin-top: 20px;
   }
   .group-title .count {
     font-size: 13px;
@@ -103,10 +117,23 @@
     word-break: break-all;
   }
 
+  /* 首页的册卡片 */
+  .group-card {
+    padding: 22px 18px;
+    font-size: 18px;
+  }
+  .group-card .path { font-size: 13px; margin-top: 8px; }
+
   .empty {
     color: #8c959f;
     font-size: 14px;
     padding: 20px 0;
+  }
+
+  .fade { animation: fade .18s ease-out; }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
   }
 </style>
 </head>
@@ -114,7 +141,7 @@
 
 <header>
   <h1>物理课件</h1>
-  <p class="subtitle">按册分类，点击卡片打开课件</p>
+  <p class="subtitle" id="subtitle">按册分类，点击卡片打开课件</p>
 </header>
 
 <nav class="nav" id="nav"></nav>
@@ -125,6 +152,7 @@
 <script>
   const app = document.getElementById('app');
   const nav = document.getElementById('nav');
+  const subtitle = document.getElementById('subtitle');
 
   // 兼容旧格式 courseFiles
   const groups = (typeof courseGroups !== 'undefined' && Array.isArray(courseGroups))
@@ -133,42 +161,101 @@
       ? [{ group: '全部课件', items: courseFiles }]
       : [];
 
-  if (!groups.length) {
-    app.innerHTML = '<p class="empty">还没有课件，请先生成 courses.js。</p>';
+  // 只保留有内容的分组
+  const validGroups = groups.filter(g => g.items && g.items.length);
+
+  // 小工具
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
   }
 
-  groups.forEach((g, index) => {
-    if (!g.items || !g.items.length) return;
+  if (!validGroups.length) {
+    app.innerHTML = '<p class="empty">还没有课件，请先生成 courses.js。</p>';
+  } else {
+    const total = validGroups.reduce((s, g) => s + g.items.length, 0);
+    subtitle.textContent = `共 ${validGroups.length} 册 · ${total} 个课件`;
+  }
 
-    const id = 'group-' + index;
+  /* ---------- 首页：只显示各册卡片 ---------- */
+  function renderHome() {
+    nav.innerHTML = '';
+    app.innerHTML = '';
 
-    // 顶部导航
-    const navLink = document.createElement('a');
-    navLink.href = '#' + id;
-    navLink.textContent = `${g.group} (${g.items.length})`;
-    nav.appendChild(navLink);
+    const wrap = el('div', 'grid fade');
 
-    // 分组标题
-    const title = document.createElement('h2');
-    title.className = 'group-title';
-    title.id = id;
-    title.innerHTML = `${g.group}<span class="count">${g.items.length} 个</span>`;
-    app.appendChild(title);
+    validGroups.forEach((g, i) => {
+      // 顶部导航
+      const navLink = el('a', null, `${g.group} (${g.items.length})`);
+      navLink.href = '#group-' + i;
+      nav.appendChild(navLink);
 
-    // 卡片网格
-    const grid = document.createElement('div');
-    grid.className = 'grid';
-
-    g.items.forEach(c => {
-      const a = document.createElement('a');
-      a.className = 'card';
-      a.href = encodeURI(c.path);
-      a.innerHTML = `${c.name}<span class="path">${c.path}</span>`;
-      grid.appendChild(a);
+      // 册卡片
+      const card = el('a', 'card group-card');
+      card.href = '#group-' + i;
+      card.appendChild(el('span', null, g.group));
+      card.appendChild(el('span', 'path', `${g.items.length} 个课件 →`));
+      wrap.appendChild(card);
     });
 
+    app.appendChild(wrap);
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- 分册页：显示该册的所有课件 ---------- */
+  function renderGroup(index) {
+    const g = validGroups[index];
+    if (!g) { location.hash = ''; return; }
+
+    nav.innerHTML = '';
+    app.innerHTML = '';
+
+    // 顶部导航（当前册高亮）
+    validGroups.forEach((gg, j) => {
+      const navLink = el('a', j === index ? 'active' : null, `${gg.group} (${gg.items.length})`);
+      navLink.href = '#group-' + j;
+      nav.appendChild(navLink);
+    });
+
+    // 返回首页
+    const back = el('a', 'back', '← 返回首页');
+    back.href = '#';
+    app.appendChild(back);
+
+    // 标题
+    const title = el('h2', 'group-title');
+    title.appendChild(document.createTextNode(g.group));
+    title.appendChild(el('span', 'count', `${g.items.length} 个`));
+    app.appendChild(title);
+
+    // 课件卡片
+    const grid = el('div', 'grid fade');
+    g.items.forEach(c => {
+      const a = el('a', 'card');
+      a.href = encodeURI(c.path);
+      a.appendChild(el('span', null, c.name));
+      a.appendChild(el('span', 'path', c.path));
+      grid.appendChild(a);
+    });
     app.appendChild(grid);
-  });
+
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------- 简易路由（支持浏览器前进/后退） ---------- */
+  function route() {
+    const m = location.hash.match(/^#group-(\d+)$/);
+    if (m) {
+      renderGroup(parseInt(m[1], 10));
+    } else {
+      renderHome();
+    }
+  }
+
+  window.addEventListener('hashchange', route);
+  route();
 </script>
 
 </body>
