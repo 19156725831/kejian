@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>加速度 · 变化率系列演示</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: #f0f6ff;
+            color: #0a1e2f;
+            padding: 20px;
+            font-size: 34px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .card {
+            background: white;
+            border-radius: 36px;
+            padding: 32px 40px;
+            box-shadow: 0 12px 40px rgba(0, 20, 40, 0.08);
+            border-left: 12px solid #2a7de1;
+        }
+        .card-title {
+            font-size: 46px;
+            font-weight: 800;
+            color: #0a2a44;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .card-title .badge {
+            background: #2a7de1;
+            color: white;
+            font-size: 30px;
+            border-radius: 60px;
+            padding: 0 28px;
+            line-height: 2;
+            white-space: nowrap;
+        }
+        .badge-orange {
+            background: #d94f14;
+        }
+        .badge-teal {
+            background: #1e8f8f;
+        }
+        .badge-green {
+            background: #25a065;
+        }
+        .badge-pink {
+            background: #c44a8f;
+        }
+        .badge-purple {
+            background: #7b4c9e;
+        }
+        .highlight {
+            color: #d94f14;
+            font-weight: 700;
+        }
+        .flex-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            align-items: stretch;
+        }
+        .flex-row .canvas-wrap {
+            flex: 2;
+            min-width: 380px;
+        }
+        .flex-row .controls-wrap {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            justify-content: center;
+            background: #f5f9ff;
+            border-radius: 28px;
+            padding: 24px 28px;
+        }
+        .flex-col {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .flex-col .controls-top {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 30px;
+            align-items: center;
+            background: #f5f9ff;
+            border-radius: 28px;
+            padding: 18px 28px;
+        }
+        .flex-col .canvas-wrap {
+            width: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #fafcff;
+            border-radius: 24px;
+            border: 2px solid #dce6f0;
+            touch-action: none;
+        }
+
+        .ctrl-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 24px;
+            align-items: center;
+        }
+        .ctrl-group label {
+            font-weight: 600;
+            font-size: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ctrl-group input[type="range"] {
+            width: 140px;
+            height: 14px;
+            accent-color: #2a7de1;
+            background: #c8d8ed;
+            border-radius: 30px;
+            -webkit-appearance: none;
+            appearance: none;
+            flex-shrink: 0;
+        }
+        .ctrl-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #2a7de1;
+            cursor: pointer;
+            border: 4px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        .ctrl-val {
+            font-size: 36px;
+            font-weight: 700;
+            color: #0a2a44;
+            min-width: 50px;
+            background: white;
+            padding: 0 16px;
+            border-radius: 30px;
+            text-align: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            border: none;
+            padding: 12px 30px;
+            border-radius: 60px;
+            font-size: 30px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.12s;
+            background: #dce6f0;
+            color: #1a2b3c;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .btn-primary {
+            background: #2a7de1;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #1b62b5;
+        }
+        .btn-warning {
+            background: #e68a2e;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #c9731f;
+        }
+        .btn-danger {
+            background: #d94f14;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #b83d0c;
+        }
+        .btn-success {
+            background: #25a065;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #1b7f50;
+        }
+        .btn-pink {
+            background: #c44a8f;
+            color: white;
+        }
+        .btn-pink:hover {
+            background: #a13a74;
+        }
+        .btn:active {
+            transform: scale(0.94);
+        }
+
+        .status-tag {
+            font-size: 26px;
+            padding: 4px 20px;
+            border-radius: 40px;
+            background: #eaf1fb;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .status-tag.playing {
+            color: #25a065;
+            background: #e6f5ed;
+        }
+        .status-tag.paused {
+            color: #e68a2e;
+            background: #fcf3e6;
+        }
+        .status-tag.stopped {
+            color: #7b7b7b;
+            background: #f0f0f0;
+        }
+
+        .speed-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 4px 0;
+        }
+        .speed-bar-wrap .label {
+            font-weight: 700;
+            width: 50px;
+            font-size: 32px;
+            text-align: right;
+        }
+        .speed-bar-bg {
+            flex: 1;
+            height: 30px;
+            background: #dce6f0;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+        .speed-bar-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 30px;
+            transition: width 0.05s;
+        }
+        .speed-num {
+            font-weight: 700;
+            font-size: 30px;
+            min-width: 60px;
+            text-align: center;
+            background: white;
+            padding: 0 12px;
+            border-radius: 20px;
+        }
+
+        .summary-card {
+            border-left-color: #25a065;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            margin-top: 12px;
+        }
+        .summary-item {
+            background: #f0f7ff;
+            padding: 24px 28px;
+            border-radius: 28px;
+            border-left: 6px solid #2a7de1;
+            text-align: center;
+        }
+        .summary-item .title {
+            font-size: 38px;
+            font-weight: 700;
+            color: #0a2a44;
+        }
+        .summary-item .content {
+            font-size: 34px;
+            margin-top: 8px;
+        }
+        .formula-box {
+            font-size: 48px;
+            font-weight: 700;
+            color: #d94f14;
+            text-align: center;
+            background: #fff4e8;
+            padding: 10px 28px;
+            border-radius: 60px;
+            display: inline-block;
+            margin: 6px 0;
+        }
+
+        .sub-desc {
+            font-size: 28px;
+            color: #3b5a7a;
+            background: #eaf1fb;
+            border-radius: 40px;
+            padding: 6px 20px;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .extend-card {
+            border-left-color: #7b4c9e;
+        }
+        .extend-content {
+            font-size: 36px;
+            line-height: 1.8;
+            background: #f8f4ff;
+            border-radius: 28px;
+            padding: 28px 36px;
+        }
+        .extend-content .def {
+            font-weight: 700;
+            color: #0a2a44;
+        }
+        .extend-content .math {
+            font-size: 42px;
+            font-weight: 600;
+            color: #1e8f8f;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                font-size: 28px;
+                padding: 10px;
+            }
+            .card {
+                padding: 20px 22px;
+            }
+            .card-title {
+                font-size: 34px;
+            }
+            .flex-row .controls-wrap {
+                min-width: 200px;
+                padding: 16px 18px;
+            }
+            .ctrl-group input[type="range"] {
+                width: 100px;
+            }
+            .btn {
+                font-size: 24px;
+                padding: 10px 20px;
+            }
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .ctrl-group label {
+                font-size: 24px;
+            }
+            .ctrl-val {
+                font-size: 28px;
+                min-width: 40px;
+            }
+            .flex-row .canvas-wrap {
+                min-width: 260px;
+            }
+            .status-tag {
+                font-size: 22px;
+            }
+            .extend-content {
+                font-size: 30px;
+                padding: 20px 24px;
+            }
+            .extend-content .math {
+                font-size: 34px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ===================== 模块0：体重增加（变胖 · 横向变宽） ===================== -->
+    <div class="card" style="border-left-color:#c44a8f;">
+        <div class="card-title">
+            <span class="badge badge-pink">⏳ 体重增加</span> 变化率类比 · 增重快慢 <span style="font-size:28px; color:#c44a8f; font-weight:400;">（变胖：横向变宽）</span>
+        </div>
+        <div class="flex-row">
+            <div class="canvas-wrap">
+                <canvas id="canvasWeight" width="700" height="360"></canvas>
+                <div class="sub-desc">
+                    📌 体重变化率 = 体重变化量 / 时间 &nbsp;·&nbsp; <span style="color:#c44a8f;">变胖→横向变宽</span>
+                </div>
+            </div>
+            <div class="controls-wrap">
+                <div style="font-size:32px; font-weight:600; color:#0a2a44; text-align:center;">增重率调节</div>
+                <div class="ctrl-group" style="justify-content:center;">
+                    <label>👧 小红 <input type="range" id="wSlider1" min="0" max="3.0" step="0.1" value="1.5"><span class="ctrl-val" id="wValSlider1">1.5</span></label>
+                    <label>👦 小刚 <input type="range" id="wSlider2" min="0" max="3.0" step="0.1" value="0.8"><span class="ctrl-val" id="wValSlider2">0.8</span></label>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:center; margin-top:4px;">
+                    <span class="status-tag stopped" id="wStatus">⏹ 已停止</span>
+                    <div class="btn-group">
+                        <button class="btn btn-pink" id="wPlayBtn">▶ 开始</button>
+                        <button class="btn btn-warning" id="wPauseBtn">⏸ 暂停</button>
+                        <button class="btn btn-danger" id="wResetBtn">↺ 重置</button>
+                    </div>
+                </div>
+                <div style="font-size:28px; color:#3b5a7a; text-align:center; margin-top:6px;">
+                    <span style="color:#c44a8f;">小红</span> <span class="highlight" id="wVal1">50.0</span> kg &nbsp;|&nbsp;
+                    <span style="color:#2a7de1;">小刚</span> <span class="highlight" id="wVal2">55.0</span> kg
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 模块1：身高生长（纵向变高） ===================== -->
+    <div class="card" style="border-left-color:#2a7de1;">
+        <div class="card-title">
+            <span class="badge">① 身高生长</span> 变化率类比 · 生长快慢 <span style="font-size:28px; color:#2a7de1; font-weight:400;">（长高：纵向变高）</span>
+        </div>
+        <div class="flex-row">
+            <div class="canvas-wrap">
+                <canvas id="canvasHeight" width="700" height="360"></canvas>
+                <div class="sub-desc">
+                    📌 身高变化率 = 身高变化量 / 时间 &nbsp;·&nbsp; <span style="color:#2a7de1;">长高→纵向变高</span>
+                </div>
+            </div>
+            <div class="controls-wrap">
+                <div style="font-size:32px; font-weight:600; color:#0a2a44; text-align:center;">生长率调节</div>
+                <div class="ctrl-group" style="justify-content:center;">
+                    <label>👦 小明 <input type="range" id="hSlider1" min="0" max="3.0" step="0.1" value="1.2"><span class="ctrl-val" id="hValSlider1">1.2</span></label>
+                    <label>🧒 小华 <input type="range" id="hSlider2" min="0" max="3.0" step="0.1" value="0.6"><span class="ctrl-val" id="hValSlider2">0.6</span></label>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:center; margin-top:4px;">
+                    <span class="status-tag stopped" id="hStatus">⏹ 已停止</span>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="hPlayBtn">▶ 开始</button>
+                        <button class="btn btn-warning" id="hPauseBtn">⏸ 暂停</button>
+                        <button class="btn btn-danger" id="hResetBtn">↺ 重置</button>
+                    </div>
+                </div>
+                <div style="font-size:28px; color:#3b5a7a; text-align:center; margin-top:6px;">
+                    <span style="color:#2a7de1;">小明</span> <span class="highlight" id="hVal1">120.0</span> cm &nbsp;|&nbsp;
+                    <span style="color:#e68a2e;">小华</span> <span class="highlight" id="hVal2">110.0</span> cm
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 模块2：位移变化（速度） ===================== -->
+    <div class="card" style="border-left-color:#1e8f8f;">
+        <div class="card-title">
+            <span class="badge badge-teal">② 位移变化</span> 速度类比 · 位置变化快慢
+        </div>
+        <div class="flex-col">
+            <div class="controls-top">
+                <div style="font-size:32px; font-weight:600; color:#0a2a44; margin-right:10px;">速度调节</div>
+                <div class="ctrl-group">
+                    <label>🔵 甲 <input type="range" id="dSlider1" min="0" max="6.0" step="0.1" value="2.5"><span class="ctrl-val" id="dValSlider1">2.5</span></label>
+                    <label>🟠 乙 <input type="range" id="dSlider2" min="0" max="6.0" step="0.1" value="1.2"><span class="ctrl-val" id="dValSlider2">1.2</span></label>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                    <span class="status-tag stopped" id="dStatus">⏹ 已停止</span>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="dPlayBtn">▶ 开始</button>
+                        <button class="btn btn-warning" id="dPauseBtn">⏸ 暂停</button>
+                        <button class="btn btn-danger" id="dResetBtn">↺ 重置</button>
+                    </div>
+                </div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="canvasDisplacement" width="700" height="260"></canvas>
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-around; font-size:32px; margin-top:6px;">
+                    <span><span style="color:#2a7de1;">甲</span> 速度 <span class="highlight" id="dSpeed1">2.5</span> m/s &nbsp; 位移 <span class="highlight" id="dVal1">0.0</span> m</span>
+                    <span><span style="color:#e68a2e;">乙</span> 速度 <span class="highlight" id="dSpeed2">1.2</span> m/s &nbsp; 位移 <span class="highlight" id="dVal2">0.0</span> m</span>
+                </div>
+                <div class="sub-desc">
+                    📌 速度 = 位移变化量 / 时间 → 即位移的 <b>变化率</b> &nbsp; <span style="color:#d94f14;">先跑到边界者消失</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 模块3：速度变化（加速度） ===================== -->
+    <div class="card" style="border-left-color:#d94f14;">
+        <div class="card-title">
+            <span class="badge badge-orange">③ 速度变化</span> 加速度核心 · 速度变化快慢
+        </div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start;">
+                <div style="flex:2; min-width:360px;">
+                    <canvas id="canvasAccel" width="1000" height="400"></canvas>
+                </div>
+                <div style="flex:1; min-width:220px; background:#f5f9ff; border-radius:28px; padding:18px 22px;">
+                    <div style="font-size:30px; font-weight:600; text-align:center; margin-bottom:8px;">📊 瞬时速度</div>
+                    <div class="speed-bar-wrap">
+                        <span class="label" style="color:#2a7de1;">A</span>
+                        <div class="speed-bar-bg"><div class="speed-bar-fill" id="barA" style="width:0%; background:linear-gradient(90deg,#2a7de1,#6aaaff);"></div></div>
+                        <span class="speed-num" id="speedA">0.0</span>
+                    </div>
+                    <div class="speed-bar-wrap">
+                        <span class="label" style="color:#e68a2e;">B</span>
+                        <div class="speed-bar-bg"><div class="speed-bar-fill" id="barB" style="width:0%; background:linear-gradient(90deg,#e68a2e,#f4b86c);"></div></div>
+                        <span class="speed-num" id="speedB">0.0</span>
+                    </div>
+                    <div style="text-align:center; font-size:28px; margin:6px 0;">
+                        时间 <span class="highlight" id="aTimeDisplay">0.0</span> s
+                    </div>
+                    <div style="text-align:center; font-size:26px; color:#d94f14; background:#fff0e8; border-radius:20px; padding:4px 8px; margin-top:6px;">
+                        🚗 先跑出屏幕者消失
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:16px 28px; align-items:center; background:#f5f9ff; border-radius:28px; padding:16px 24px;">
+                <div style="font-size:30px; font-weight:600; color:#0a2a44;">加速度调节</div>
+                <div class="ctrl-group">
+                    <label>A <input type="range" id="aSliderA" min="0" max="4.0" step="0.1" value="1.6"><span class="ctrl-val" id="aValA">1.6</span></label>
+                    <label>B <input type="range" id="aSliderB" min="0" max="4.0" step="0.1" value="0.7"><span class="ctrl-val" id="aValB">0.7</span></label>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                    <span class="status-tag stopped" id="aStatus">⏹ 已停止</span>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="aPlayBtn">▶ 开始</button>
+                        <button class="btn btn-warning" id="aPauseBtn">⏸ 暂停</button>
+                        <button class="btn btn-danger" id="aResetBtn">↺ 重置</button>
+                    </div>
+                </div>
+            </div>
+            <div style="font-size:28px; text-align:center; background:#fff4e8; border-radius:50px; padding:6px 18px;">
+                💡 a = Δv / Δt，a 越大速度增加越快 &nbsp;·&nbsp; 小车超出右边界即消失
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 模块4：变化率总结 ===================== -->
+    <div class="card summary-card">
+        <div class="card-title">
+            <span class="badge badge-green">📌 变化率总结</span> 从生长到速度再到加速度
+        </div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="title">🌱 身高变化率</div>
+                <div class="content">身高变化量 / 时间<br><span style="color:#2a7de1;">描述生长快慢</span></div>
+            </div>
+            <div class="summary-item" style="border-left-color:#1e8f8f;">
+                <div class="title">🚀 速度</div>
+                <div class="content">位移变化量 / 时间<br><span style="color:#1e8f8f;">描述位置变化快慢</span></div>
+            </div>
+            <div class="summary-item" style="border-left-color:#d94f14;">
+                <div class="title">⚡ 加速度</div>
+                <div class="content">速度变化量 / 时间<br><span style="color:#d94f14;">描述速度变化快慢</span></div>
+            </div>
+        </div>
+        <div style="text-align:center; margin-top:16px; font-size:38px; background:#eaf3fb; border-radius:60px; padding:16px 28px;">
+            <span class="formula-box" style="font-size:44px; padding:6px 24px;">变化率 = 变化量 / 时间</span>
+            <span style="margin-left:20px; font-weight:600;">→ 层层递进，核心不变</span>
+        </div>
+        <div style="text-align:center; font-size:34px; margin-top:12px; color:#0a2a44;">
+            💪 加速度是速度的<b>变化率</b>，是连接运动与力的桥梁！
+        </div>
+    </div>
+
+    <!-- ===================== 模块5：拓展学习 ===================== -->
+    <div class="card extend-card">
+        <div class="card-title">
+            <span class="badge badge-purple">📖 拓展学习</span> 变化率
+        </div>
+        <div class="extend-content">
+            <div style="margin-bottom:20px;">
+                <span class="def">1. 定义：</span>
+                自然界中某量 \( D \) 的变化可以记为 \(\Delta D\)，发生这个变化所用的时间间隔可以记为 \(\Delta t\)；
+                变化量 \(\Delta D\) 与 \(\Delta t\) 之比就是这个量对时间的变化率，简称变化率。
+            </div>
+            <div style="margin-bottom:20px;">
+                <span class="def">2. 物理意义：</span>
+                描述某量 \( D \) 的变化快慢，<span style="color:#d94f14; font-weight:700;">不表示</span> 某量 \( D \) 的变化量 \(\Delta D\) 的大小。
+            </div>
+            <div>
+                <span class="def">3. 速度变化率即是加速度。</span>
+                <span style="margin-left:20px; font-size:40px; font-weight:700; color:#d94f14;">a = Δv / Δt</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ================================================================
+    // 工具：roundRect polyfill
+    // ================================================================
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+            if (w < 2 * r) r = w / 2;
+            if (h < 2 * r) r = h / 2;
+            this.moveTo(x + r, y);
+            this.lineTo(x + w - r, y);
+            this.quadraticCurveTo(x + w, y, x + w, y + r);
+            this.lineTo(x + w, y + h - r);
+            this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            this.lineTo(x + r, y + h);
+            this.quadraticCurveTo(x, y + h, x, y + h - r);
+            this.lineTo(x, y + r);
+            this.quadraticCurveTo(x, y, x + r, y);
+            this.closePath();
+            return this;
+        };
+    }
+
+    // ================================================================
+    // 模块0：体重增加（变胖 · 横向变宽，椭圆身体）
+    // ================================================================
+    const W = {
+        canvas: document.getElementById('canvasWeight'),
+        ctx: null,
+        time: 0,
+        playing: false,
+        rate1: 1.5,
+        rate2: 0.8,
+        initW1: 50,
+        initW2: 55,
+        maxW: 80,
+        animId: null,
+
+        init() {
+            this.ctx = this.canvas.getContext('2d');
+            this.draw();
+            const s1 = document.getElementById('wSlider1');
+            const s2 = document.getElementById('wSlider2');
+            s1.addEventListener('input', () => {
+                this.rate1 = parseFloat(s1.value);
+                document.getElementById('wValSlider1').textContent = this.rate1.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            s2.addEventListener('input', () => {
+                this.rate2 = parseFloat(s2.value);
+                document.getElementById('wValSlider2').textContent = this.rate2.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            document.getElementById('wPlayBtn').addEventListener('click', () => this.play());
+            document.getElementById('wPauseBtn').addEventListener('click', () => this.pause());
+            document.getElementById('wResetBtn').addEventListener('click', () => this.reset());
+            this.updateStatus('stopped');
+        },
+
+        getW1() { return this.initW1 + this.rate1 * this.time; },
+        getW2() { return this.initW2 + this.rate2 * this.time; },
+
+        draw() {
+            const ctx = this.ctx;
+            const w = this.canvas.width,
+                h = this.canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            // 地面
+            ctx.fillStyle = '#dce6f0';
+            ctx.fillRect(0, h - 30, w, 30);
+
+            let w1 = this.getW1(),
+                w2 = this.getW2();
+            document.getElementById('wVal1').textContent = w1.toFixed(1);
+            document.getElementById('wVal2').textContent = w2.toFixed(1);
+
+            // 人物参数：高度固定，宽度随体重变化
+            const groundY = h - 30;
+            const headRadius = 26;
+            const bodyHeight = 100;
+            const minBodyWidth = 32;
+            const maxBodyWidth = 130;
+            // 体重范围 40~80kg 映射到宽度
+            const wLow = 40,
+                wHigh = 80;
+            const bw1 = minBodyWidth + (w1 - wLow) / (wHigh - wLow) * (maxBodyWidth - minBodyWidth);
+            const bw2 = minBodyWidth + (w2 - wLow) / (wHigh - wLow) * (maxBodyWidth - minBodyWidth);
+            const bodyW1 = Math.max(minBodyWidth, Math.min(maxBodyWidth, bw1));
+            const bodyW2 = Math.max(minBodyWidth, Math.min(maxBodyWidth, bw2));
+
+            // 人物位置
+            const cx1 = 220,
+                cx2 = 480;
+            // 身体中心 y
+            const bodyCenterY1 = groundY - bodyHeight / 2;
+            const bodyCenterY2 = groundY - bodyHeight / 2;
+            // 头部中心 y
+            const headY1 = groundY - bodyHeight - headRadius + 8;
+            const headY2 = groundY - bodyHeight - headRadius + 8;
+
+            // ---- 绘制小红 ----
+            this.drawFatPerson(ctx, cx1, bodyCenterY1, bodyW1, bodyHeight, headY1, headRadius, '#c44a8f', '#f0a8d0', '小红', w1);
+            // ---- 绘制小刚 ----
+            this.drawFatPerson(ctx, cx2, bodyCenterY2, bodyW2, bodyHeight, headY2, headRadius, '#2a7de1', '#8ab8f0', '小刚', w2);
+
+            // 标注增重率
+            ctx.fillStyle = '#3b5a7a';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.shadowBlur = 0;
+            ctx.fillText('增重率: ' + this.rate1.toFixed(1) + ' kg/年', 30, 40);
+            ctx.fillText('增重率: ' + this.rate2.toFixed(1) + ' kg/年', 30, 74);
+
+            // 提示变胖方向
+            ctx.fillStyle = '#c44a8f';
+            ctx.font = '22px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('← 变胖 →', w - 30, 34);
+            ctx.fillStyle = '#2a7de1';
+            ctx.fillText('← 变胖 →', w - 30, 68);
+        },
+
+        drawFatPerson(ctx, cx, bodyCy, bodyW, bodyH, headY, headR, color, lightColor, name, weight) {
+            // 身体 - 椭圆，宽度可变，高度固定
+            ctx.shadowColor = 'rgba(0,0,0,0.08)';
+            ctx.shadowBlur = 12;
+            // 身体椭圆
+            ctx.beginPath();
+            ctx.ellipse(cx, bodyCy, bodyW / 2, bodyH / 2, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            // 身体高光（增加立体感）
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.ellipse(cx - bodyW * 0.12, bodyCy - bodyH * 0.15, bodyW * 0.2, bodyH * 0.25, -0.3, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            ctx.fill();
+
+            // 头部 - 圆形
+            ctx.shadowColor = 'rgba(0,0,0,0.06)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(cx, headY, headR, 0, 2 * Math.PI);
+            ctx.fillStyle = lightColor;
+            ctx.fill();
+            // 脸部高光
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(cx - headR * 0.25, headY - headR * 0.15, headR * 0.3, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fill();
+            // 眼睛（小点）
+            ctx.fillStyle = '#1a2b3c';
+            ctx.beginPath();
+            ctx.arc(cx - headR * 0.3, headY - headR * 0.15, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + headR * 0.3, headY - headR * 0.15, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            // 微笑
+            ctx.beginPath();
+            ctx.arc(cx, headY + headR * 0.1, headR * 0.25, 0, Math.PI);
+            ctx.strokeStyle = '#1a2b3c';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 姓名和体重
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#1a2b3c';
+            ctx.font = '28px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, cx, groundY + 50);
+            ctx.fillStyle = '#0a2a44';
+            ctx.font = 'bold 28px sans-serif';
+            ctx.fillText(weight.toFixed(1) + 'kg', cx, groundY + 90);
+
+            // 在地面画两个小脚印
+            ctx.fillStyle = 'rgba(180,190,200,0.4)';
+            ctx.beginPath();
+            ctx.ellipse(cx - bodyW * 0.2, groundY + 6, 12, 6, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx + bodyW * 0.2, groundY + 6, 12, 6, 0, 0, 2 * Math.PI);
+            ctx.fill();
+        },
+
+        update(dt) {
+            if (!this.playing) return;
+            this.time += dt;
+            this.draw();
+        },
+
+        play() {
+            if (this.playing) return;
+            this.playing = true;
+            this.updateStatus('playing');
+            if (!this.animId) this.loop();
+        },
+        pause() {
+            if (!this.playing) return;
+            this.playing = false;
+            this.updateStatus('paused');
+        },
+        reset() {
+            this.playing = false;
+            this.time = 0;
+            if (this.animId) { cancelAnimationFrame(this.animId);
+                this.animId = null; }
+            this.draw();
+            this.updateStatus('stopped');
+        },
+
+        loop() {
+            if (!this.playing) { this.animId = null; return; }
+            this.update(0.02);
+            this.animId = requestAnimationFrame(() => this.loop());
+        },
+
+        updateStatus(state) {
+            const el = document.getElementById('wStatus');
+            el.className = 'status-tag ' + state;
+            el.textContent = state === 'playing' ? '▶ 运行中' : state === 'paused' ? '⏸ 已暂停' : '⏹ 已停止';
+        }
+    };
+
+    // 地面高度用于体重模块的绘制
+    let groundY = 0;
+
+    // ================================================================
+    // 模块1：身高生长（纵向变高）
+    // ================================================================
+    const H = {
+        canvas: document.getElementById('canvasHeight'),
+        ctx: null,
+        time: 0,
+        playing: false,
+        rate1: 1.2,
+        rate2: 0.6,
+        initH1: 120,
+        initH2: 110,
+        maxH: 230,
+        animId: null,
+
+        init() {
+            this.ctx = this.canvas.getContext('2d');
+            this.draw();
+            const s1 = document.getElementById('hSlider1');
+            const s2 = document.getElementById('hSlider2');
+            s1.addEventListener('input', () => {
+                this.rate1 = parseFloat(s1.value);
+                document.getElementById('hValSlider1').textContent = this.rate1.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            s2.addEventListener('input', () => {
+                this.rate2 = parseFloat(s2.value);
+                document.getElementById('hValSlider2').textContent = this.rate2.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            document.getElementById('hPlayBtn').addEventListener('click', () => this.play());
+            document.getElementById('hPauseBtn').addEventListener('click', () => this.pause());
+            document.getElementById('hResetBtn').addEventListener('click', () => this.reset());
+            this.updateStatus('stopped');
+        },
+
+        getH1() { return this.initH1 + this.rate1 * this.time; },
+        getH2() { return this.initH2 + this.rate2 * this.time; },
+
+        draw() {
+            const ctx = this.ctx;
+            const w = this.canvas.width,
+                h = this.canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#dce6f0';
+            ctx.fillRect(0, h - 30, w, 30);
+            let h1 = this.getH1(),
+                h2 = this.getH2();
+            document.getElementById('hVal1').textContent = h1.toFixed(1);
+            document.getElementById('hVal2').textContent = h2.toFixed(1);
+            const maxDisplay = this.maxH;
+            const scale = (h - 60) / maxDisplay;
+            const baseX1 = 200,
+                baseX2 = 480,
+                baseY = h - 30;
+            const height1 = Math.min(h1, maxDisplay) * scale;
+            const height2 = Math.min(h2, maxDisplay) * scale;
+
+            function drawPerson(x, bottomY, height, color, name, val) {
+                const headR = 22,
+                    bodyW = 40,
+                    bodyH = height - headR * 2;
+                ctx.shadowColor = 'rgba(0,0,0,0.06)';
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.roundRect(x - bodyW / 2, bottomY - height, bodyW, Math.max(bodyH, 4), 10);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x, bottomY - height - headR, headR, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#1a2b3c';
+                ctx.font = '28px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(name, x, bottomY + 50);
+                ctx.fillStyle = '#0a2a44';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.fillText(val.toFixed(1) + 'cm', x, bottomY - height - headR - 22);
+            }
+            drawPerson(baseX1, baseY, height1, '#2a7de1', '小明', h1);
+            drawPerson(baseX2, baseY, height2, '#e68a2e', '小华', h2);
+            ctx.fillStyle = '#3b5a7a';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.shadowBlur = 0;
+            ctx.fillText('生长率: ' + this.rate1.toFixed(1) + ' cm/年', 30, 40);
+            ctx.fillText('生长率: ' + this.rate2.toFixed(1) + ' cm/年', 30, 74);
+        },
+
+        update(dt) {
+            if (!this.playing) return;
+            this.time += dt;
+            this.draw();
+        },
+
+        play() {
+            if (this.playing) return;
+            this.playing = true;
+            this.updateStatus('playing');
+            if (!this.animId) this.loop();
+        },
+        pause() {
+            if (!this.playing) return;
+            this.playing = false;
+            this.updateStatus('paused');
+        },
+        reset() {
+            this.playing = false;
+            this.time = 0;
+            if (this.animId) { cancelAnimationFrame(this.animId);
+                this.animId = null; }
+            this.draw();
+            this.updateStatus('stopped');
+        },
+
+        loop() {
+            if (!this.playing) { this.animId = null; return; }
+            this.update(0.02);
+            this.animId = requestAnimationFrame(() => this.loop());
+        },
+
+        updateStatus(state) {
+            const el = document.getElementById('hStatus');
+            el.className = 'status-tag ' + state;
+            el.textContent = state === 'playing' ? '▶ 运行中' : state === 'paused' ? '⏸ 已暂停' : '⏹ 已停止';
+        }
+    };
+
+    // ================================================================
+    // 模块2：位移变化
+    // ================================================================
+    const D = {
+        canvas: document.getElementById('canvasDisplacement'),
+        ctx: null,
+        time: 0,
+        playing: false,
+        speed1: 2.5,
+        speed2: 1.2,
+        maxDisp: 600,
+        animId: null,
+
+        init() {
+            this.ctx = this.canvas.getContext('2d');
+            this.draw();
+            const s1 = document.getElementById('dSlider1');
+            const s2 = document.getElementById('dSlider2');
+            s1.addEventListener('input', () => {
+                this.speed1 = parseFloat(s1.value);
+                document.getElementById('dValSlider1').textContent = this.speed1.toFixed(1);
+                document.getElementById('dSpeed1').textContent = this.speed1.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            s2.addEventListener('input', () => {
+                this.speed2 = parseFloat(s2.value);
+                document.getElementById('dValSlider2').textContent = this.speed2.toFixed(1);
+                document.getElementById('dSpeed2').textContent = this.speed2.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            document.getElementById('dPlayBtn').addEventListener('click', () => this.play());
+            document.getElementById('dPauseBtn').addEventListener('click', () => this.pause());
+            document.getElementById('dResetBtn').addEventListener('click', () => this.reset());
+            this.updateStatus('stopped');
+            document.getElementById('dSpeed1').textContent = this.speed1.toFixed(1);
+            document.getElementById('dSpeed2').textContent = this.speed2.toFixed(1);
+        },
+
+        getD1() { return this.speed1 * this.time; },
+        getD2() { return this.speed2 * this.time; },
+
+        draw() {
+            const ctx = this.ctx;
+            const w = this.canvas.width,
+                h = this.canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#dce6f0';
+            ctx.fillRect(20, h - 32, w - 40, 10);
+            const d1 = this.getD1(),
+                d2 = this.getD2();
+            document.getElementById('dVal1').textContent = d1.toFixed(1);
+            document.getElementById('dVal2').textContent = d2.toFixed(1);
+
+            const maxD = this.maxDisp;
+            const scaleX = (w - 80) / maxD;
+            const yBase = h - 32;
+
+            const out1 = d1 > maxD;
+            const out2 = d2 > maxD;
+
+            ctx.shadowColor = 'rgba(0,0,0,0.08)';
+            ctx.shadowBlur = 10;
+            if (!out1) {
+                const x1 = 30 + d1 * scaleX;
+                ctx.beginPath();
+                ctx.arc(x1, yBase - 20, 24, 0, 2 * Math.PI);
+                ctx.fillStyle = '#2a7de1';
+                ctx.fill();
+                ctx.fillStyle = '#1a2b3c';
+                ctx.font = '26px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 0;
+                ctx.fillText('甲', x1, yBase - 54);
+                ctx.fillStyle = '#0a2a44';
+                ctx.font = 'bold 26px sans-serif';
+                ctx.fillText(d1.toFixed(1) + 'm', x1, yBase + 42);
+            } else {
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#d94f14';
+                ctx.font = 'bold 30px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('甲已跑出 →', 30, 50);
+            }
+
+            if (!out2) {
+                const x2 = 30 + d2 * scaleX;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(x2, yBase - 20, 24, 0, 2 * Math.PI);
+                ctx.fillStyle = '#e68a2e';
+                ctx.fill();
+                ctx.fillStyle = '#1a2b3c';
+                ctx.font = '26px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 0;
+                ctx.fillText('乙', x2, yBase - 54);
+                ctx.fillStyle = '#0a2a44';
+                ctx.font = 'bold 26px sans-serif';
+                ctx.fillText(d2.toFixed(1) + 'm', x2, yBase + 42);
+            } else {
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#d94f14';
+                ctx.font = 'bold 30px sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('← 乙已跑出', w - 30, 50);
+            }
+
+            ctx.fillStyle = '#b0c0d0';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.shadowBlur = 0;
+            ctx.fillText('起点', 22, yBase + 42);
+            // 速度标注
+            ctx.fillStyle = '#3b5a7a';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('v甲=' + this.speed1.toFixed(1) + ' m/s', w - 30, 40);
+            ctx.fillText('v乙=' + this.speed2.toFixed(1) + ' m/s', w - 30, 74);
+        },
+
+        update(dt) {
+            if (!this.playing) return;
+            this.time += dt;
+            this.draw();
+        },
+
+        play() {
+            if (this.playing) return;
+            this.playing = true;
+            this.updateStatus('playing');
+            if (!this.animId) this.loop();
+        },
+        pause() {
+            if (!this.playing) return;
+            this.playing = false;
+            this.updateStatus('paused');
+        },
+        reset() {
+            this.playing = false;
+            this.time = 0;
+            if (this.animId) { cancelAnimationFrame(this.animId);
+                this.animId = null; }
+            this.draw();
+            this.updateStatus('stopped');
+        },
+
+        loop() {
+            if (!this.playing) { this.animId = null; return; }
+            this.update(0.02);
+            this.animId = requestAnimationFrame(() => this.loop());
+        },
+
+        updateStatus(state) {
+            const el = document.getElementById('dStatus');
+            el.className = 'status-tag ' + state;
+            el.textContent = state === 'playing' ? '▶ 运行中' : state === 'paused' ? '⏸ 已暂停' : '⏹ 已停止';
+        }
+    };
+
+    // ================================================================
+    // 模块3：速度变化（加速度）
+    // ================================================================
+    const A = {
+        canvas: document.getElementById('canvasAccel'),
+        ctx: null,
+        time: 0,
+        playing: false,
+        a1: 1.6,
+        a2: 0.7,
+        maxV: 12,
+        animId: null,
+
+        init() {
+            this.ctx = this.canvas.getContext('2d');
+            this.draw();
+            const s1 = document.getElementById('aSliderA');
+            const s2 = document.getElementById('aSliderB');
+            s1.addEventListener('input', () => {
+                this.a1 = parseFloat(s1.value);
+                document.getElementById('aValA').textContent = this.a1.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            s2.addEventListener('input', () => {
+                this.a2 = parseFloat(s2.value);
+                document.getElementById('aValB').textContent = this.a2.toFixed(1);
+                if (!this.playing) this.draw();
+            });
+            document.getElementById('aPlayBtn').addEventListener('click', () => this.play());
+            document.getElementById('aPauseBtn').addEventListener('click', () => this.pause());
+            document.getElementById('aResetBtn').addEventListener('click', () => this.reset());
+            this.updateStatus('stopped');
+        },
+
+        getV1() { return this.a1 * this.time; },
+        getV2() { return this.a2 * this.time; },
+
+        draw() {
+            const ctx = this.ctx;
+            const w = this.canvas.width,
+                h = this.canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#f8fcff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = '#d0ddee';
+            ctx.fillRect(20, h - 40, w - 40, 12);
+
+            const v1 = this.getV1(),
+                v2 = this.getV2();
+            const maxV = Math.max(this.maxV, v1 * 1.2, v2 * 1.2, 2);
+            const s1 = 0.5 * this.a1 * this.time * this.time;
+            const s2 = 0.5 * this.a2 * this.time * this.time;
+            const x1 = 30 + s1 * 1.2;
+            const x2 = 30 + s2 * 1.2;
+            const y1 = 140,
+                y2 = 270;
+
+            document.getElementById('barA').style.width = Math.max(0, Math.min((v1 / maxV) * 100, 100)) + '%';
+            document.getElementById('barB').style.width = Math.max(0, Math.min((v2 / maxV) * 100, 100)) + '%';
+            document.getElementById('speedA').textContent = v1.toFixed(1);
+            document.getElementById('speedB').textContent = v2.toFixed(1);
+            document.getElementById('aTimeDisplay').textContent = this.time.toFixed(1);
+
+            const out1 = x1 > w;
+            const out2 = x2 > w;
+
+            function drawCar(x, y, color, label, v) {
+                ctx.shadowColor = 'rgba(0,0,0,0.06)';
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.roundRect(x - 38, y - 18, 76, 34, 10);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.roundRect(x - 14, y - 30, 28, 16, 6);
+                ctx.fill();
+                ctx.fillStyle = '#333';
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(x - 20, y + 18, 10, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(x + 20, y + 18, 10, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = '#1a2b3c';
+                ctx.font = 'bold 26px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(label + '  v=' + v.toFixed(1) + ' m/s', x, y - 50);
+            }
+
+            if (!out1) drawCar(x1, y1, '#2a7de1', 'A', v1);
+            if (!out2) drawCar(x2, y2, '#e68a2e', 'B', v2);
+
+            ctx.fillStyle = '#3b5a7a';
+            ctx.font = '26px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.shadowBlur = 0;
+            ctx.fillText('a₁ = ' + this.a1.toFixed(1) + ' m/s²', 30, 36);
+            ctx.fillText('a₂ = ' + this.a2.toFixed(1) + ' m/s²', 30, 72);
+
+            if (out1) {
+                ctx.fillStyle = '#d94f14';
+                ctx.font = 'bold 30px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('A 已跑出 →', w - 220, 80);
+            }
+            if (out2) {
+                ctx.fillStyle = '#d94f14';
+                ctx.font = 'bold 30px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('B 已跑出 →', w - 220, 130);
+            }
+        },
+
+        update(dt) {
+            if (!this.playing) return;
+            this.time += dt;
+            this.draw();
+        },
+
+        play() {
+            if (this.playing) return;
+            this.playing = true;
+            this.updateStatus('playing');
+            if (!this.animId) this.loop();
+        },
+        pause() {
+            if (!this.playing) return;
+            this.playing = false;
+            this.updateStatus('paused');
+        },
+        reset() {
+            this.playing = false;
+            this.time = 0;
+            if (this.animId) { cancelAnimationFrame(this.animId);
+                this.animId = null; }
+            this.draw();
+            this.updateStatus('stopped');
+        },
+
+        loop() {
+            if (!this.playing) { this.animId = null; return; }
+            this.update(0.02);
+            this.animId = requestAnimationFrame(() => this.loop());
+        },
+
+        updateStatus(state) {
+            const el = document.getElementById('aStatus');
+            el.className = 'status-tag ' + state;
+            el.textContent = state === 'playing' ? '▶ 运行中' : state === 'paused' ? '⏸ 已暂停' : '⏹ 已停止';
+        }
+    };
+
+    // ================================================================
+    // 初始化所有模块
+    // ================================================================
+    W.init();
+    H.init();
+    D.init();
+    A.init();
+
+    // ================================================================
+    // 页面可见性处理
+    // ================================================================
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            if (W.animId) { cancelAnimationFrame(W.animId);
+                W.animId = null; }
+            if (H.animId) { cancelAnimationFrame(H.animId);
+                H.animId = null; }
+            if (D.animId) { cancelAnimationFrame(D.animId);
+                D.animId = null; }
+            if (A.animId) { cancelAnimationFrame(A.animId);
+                A.animId = null; }
+        } else {
+            if (W.playing && !W.animId) W.loop();
+            if (H.playing && !H.animId) H.loop();
+            if (D.playing && !D.animId) D.loop();
+            if (A.playing && !A.animId) A.loop();
+        }
+    });
+</script>
+</body>
+</html>

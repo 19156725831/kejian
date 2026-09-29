@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>质点概念 · 课堂互动</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #f0f4f8;
+            color: #1e293b;
+            padding: 24px 20px 60px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* 标题 */
+        .main-header {
+            text-align: center;
+            margin-bottom: 28px;
+            background: linear-gradient(135deg, #1e3a5f, #2a5f8f);
+            padding: 28px 20px 22px;
+            border-radius: 28px;
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(26, 67, 113, 0.30);
+        }
+        .main-header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .main-header .sub {
+            font-size: 1.05rem;
+            opacity: 0.85;
+            margin-top: 6px;
+        }
+
+        /* 概念卡片（第二部分） */
+        .concept-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            margin: 28px 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            border-left: 6px solid #2a5f8f;
+        }
+        .concept-card h2 {
+            font-size: 1.4rem;
+            color: #1e3a5f;
+            margin-bottom: 12px;
+        }
+        .concept-card p {
+            line-height: 1.8;
+            font-size: 1rem;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+        .concept-card .highlight {
+            background: #eef6ff;
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-top: 12px;
+            border: 1px dashed #7aa9d9;
+        }
+        .concept-card .highlight strong {
+            color: #1e4a7a;
+        }
+
+        /* 问题列表 */
+        .question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .question-item {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 18px 22px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 12px 20px;
+            transition: box-shadow 0.2s;
+        }
+        .question-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+        }
+        .question-item .q-content {
+            flex: 1;
+            min-width: 200px;
+        }
+        .question-item .q-content .q-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #0f172a;
+        }
+        .question-item .q-content .q-hint {
+            margin-top: 8px;
+            font-size: 0.92rem;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .question-item .q-content .q-hint i {
+            font-style: normal;
+            background: #dbeafe;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1e4a7a;
+            margin-right: 6px;
+        }
+        .question-item .draw-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .btn-draw {
+            background: #2a5f8f;
+            color: #fff;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 2px 8px rgba(42, 95, 143, 0.25);
+        }
+        .btn-draw:hover {
+            background: #1e4a7a;
+            transform: translateY(-2px);
+        }
+        .btn-draw:active {
+            transform: translateY(0);
+        }
+        .draw-result {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2a5f8f;
+            background: #eef6ff;
+            padding: 2px 14px;
+            border-radius: 30px;
+            min-width: 50px;
+            text-align: center;
+            border: 1px solid #bdd9f0;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 判断区域 */
+        .judge-area {
+            margin-top: 28px;
+            border-top: 4px solid #d97706;
+            padding-top: 20px;
+        }
+        .judge-area .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .judge-item {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 18px 22px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 12px 20px;
+            margin-bottom: 14px;
+        }
+        .judge-item .j-content {
+            flex: 1;
+            min-width: 200px;
+        }
+        .judge-item .j-content .j-statement {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #0f172a;
+        }
+        .judge-item .j-content .j-actions {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .judge-item .j-content .j-actions label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 4px 12px 4px 6px;
+            border-radius: 30px;
+            background: #f1f5f9;
+            transition: background 0.15s;
+        }
+        .judge-item .j-content .j-actions label:hover {
+            background: #e2e8f0;
+        }
+        .judge-item .j-content .j-actions input[type="radio"] {
+            accent-color: #2a5f8f;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .btn-submit {
+            background: #0b7e4b;
+            color: #fff;
+            border: none;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: #09653b;
+        }
+        .btn-clear {
+            background: #e9edf2;
+            border: 1px solid #94a3b8;
+            color: #334155;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .btn-clear:hover {
+            background: #d1d9e6;
+        }
+        .judge-feedback {
+            margin-top: 10px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 500;
+            display: none;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        .judge-feedback.show {
+            display: block;
+        }
+        .judge-feedback.correct {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #14532d;
+        }
+        .judge-feedback.wrong {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #7f1d1d;
+        }
+        .judge-feedback .explain {
+            font-weight: 400;
+            color: #334155;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .main-header h1 {
+                font-size: 1.6rem;
+            }
+            .question-item, .judge-item {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .question-item .draw-section {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+            .draw-result {
+                min-width: 40px;
+            }
+        }
+        .text-muted {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .mt-4 { margin-top: 24px; }
+        .mb-2 { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题 -->
+        <header class="main-header">
+            <h1>🎯 质点概念 · 课堂互动</h1>
+            <div class="sub">描述物体运动 → 总结质点定义 → 判断练习</div>
+        </header>
+
+        <!-- ======== 第一部分：描述性提问（已按您的要求修改） ======== -->
+        <div style="margin-bottom: 12px;">
+            <h2 style="font-size:1.4rem; color:#1e3a5f; display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <span>📝</span> 描述下列物体的运动（思考：能否忽略形状和大小？）
+            </h2>
+            <div class="question-list" id="description-list">
+                <!-- 由 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <!-- ======== 第二部分：质点定义与意义（总结，未改动） ======== -->
+        <div class="concept-card">
+            <h2>📖 什么是质点？</h2>
+            <p><strong>质点</strong> 是物理学中一个 <strong>理想化的物理模型</strong> —— 当物体的 <strong>形状和大小</strong> 对所研究的问题 <strong>影响很小</strong> 或 <strong>可以忽略</strong> 时，就可以把物体看作一个 <strong>有质量的点</strong>。</p>
+            <div class="highlight">
+                <strong>🧠 质点的意义：</strong> 引入质点，可以把复杂物体的运动简化为 <strong>点的运动</strong>，使问题更容易研究。<br />
+                <strong>⚖️ 判断关键：</strong> 物体能否看作质点，<strong>取决于研究的问题</strong>，而不是物体本身的大小！<br />
+                <span style="font-size:0.92rem; color:#475569;">✨ 例如：研究地球公转 → 地球可看作质点；研究地球自转 → 地球不能看作质点。</span>
+            </div>
+        </div>
+
+        <!-- ======== 第三部分：判断练习（未改动） ======== -->
+        <div class="judge-area">
+            <div class="section-title">
+                <span>✅</span> 质点判断练习（每个题目独立抽签）
+            </div>
+            <div id="judge-list">
+                <!-- 由 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <div style="text-align:center; margin-top:32px; color:#94a3b8; font-size:0.85rem; border-top:1px solid #e2e8f0; padding-top:24px;">
+            🧪 人教版 · 物理必修第一册 · 质点 &nbsp;|&nbsp; 课堂互动
+        </div>
+    </div>
+
+    <script>
+        // =============================================================
+        //  数据（第一部分已按您的要求修改）
+        // =============================================================
+
+        // ---- 描述性问题（第一部分） ----
+        const DESCRIPTION_QUESTIONS = [
+            {
+                id: 1,
+                text: '请同学们用中文描述一下老鹰是怎么运动的（可以自由描述）。',
+                hint: '描述时，你觉得需要关注老鹰的翅膀扇动还是整体飞行路径？'
+            },
+            {
+                id: 2,
+                text: '请同学们描述一下足球是怎么运动的（不会可以从书中找）。',
+                hint: '可以结合生活经验或课本知识，思考是否需要考虑足球的旋转。'
+            },
+            {
+                id: 3,
+                text: '一个足球向南近似匀速运动，速度是1米/秒，问2秒运动了多远？思考这种情况下需要考虑足球的旋转吗？',
+                hint: '匀速直线运动中，位移 = 速度 × 时间。旋转是否影响位移的计算？'
+            },
+            {
+                id: 4,
+                text: '火车长100米，速度10米/秒，桥长50米，问火车完全通过桥需要多长时间？',
+                hint: '火车通过桥的总路程是“车长 + 桥长”还是只算“桥长”？'
+            },
+            {
+                id: 5,
+                text: '假设亳州到北京的距离为1000米，火车长100米，以10米/秒的速度匀速行驶。分别计算“考虑火车长度”和“不考虑火车长度”两种情况下，火车从亳州到北京所需的时间。',
+                hint: '考虑车长时总路程 = 距离 + 车长；不考虑时总路程 = 距离。两种结果有何不同？哪种更符合实际情况？'
+            }
+        ];
+
+        // ---- 判断练习（第三部分，保持原15题不变） ----
+        const JUDGE_QUESTIONS = [
+            { id: 1, statement: '研究地球绕太阳公转时，地球可以看作质点。', answer: true, explanation: '✅ 正确。地球直径远小于公转半径，形状大小可忽略。' },
+            { id: 2, statement: '研究乒乓球比赛中球的旋转时，乒乓球可以看作质点。', answer: false, explanation: '❌ 错误。旋转涉及球的形状和表面运动，不能忽略。' },
+            { id: 3, statement: '研究火车从北京到上海的时间时，火车可以看作质点。', answer: true, explanation: '✅ 正确。路程远大于车长，形状可忽略。' },
+            { id: 4, statement: '研究跳水运动员在空中翻转的动作时，运动员可以看作质点。', answer: false, explanation: '❌ 错误。翻转动作需要考虑身体姿态和形状。' },
+            { id: 5, statement: '研究马拉松运动员的成绩时，运动员可以看作质点。', answer: true, explanation: '✅ 正确。全程42公里，运动员身高可忽略。' },
+            { id: 6, statement: '研究飞机在空中的飞行轨迹时，飞机可以看作质点。', answer: true, explanation: '✅ 正确。轨迹关注整体路径，形状影响小。' },
+            { id: 7, statement: '研究汽车轮胎的转动时，轮胎可以看作质点。', answer: false, explanation: '❌ 错误。转动需考虑轮胎的圆周运动，形状不可忽略。' },
+            { id: 8, statement: '研究蚂蚁从一片叶子爬到另一片叶子的时间时，蚂蚁可以看作质点。', answer: true, explanation: '✅ 正确。蚂蚁体长相对于叶子间距可忽略。' },
+            { id: 9, statement: '研究原子核的内部结构时，原子核可以看作质点。', answer: false, explanation: '❌ 错误。内部结构需关注核子分布，形状不能忽略。' },
+            { id: 10, statement: '研究体操运动员在平衡木上的动作时，运动员可以看作质点。', answer: false, explanation: '❌ 错误。动作细节与身体各部分位置有关，不能忽略形状。' },
+            { id: 11, statement: '研究公交车从起点站到终点站的行驶时间时，公交车可以看作质点。', answer: true, explanation: '✅ 正确。行驶距离远大于车长，形状可忽略。' },
+            { id: 12, statement: '研究钟表指针的运动时，指针可以看作质点。', answer: false, explanation: '❌ 错误。指针转动时各点速度不同，形状不能忽略。' },
+            { id: 13, statement: '研究火箭发射升空的轨迹时，火箭可以看作质点。', answer: true, explanation: '✅ 正确。上升轨迹关注整体运动，火箭尺寸相对飞行高度可忽略。' },
+            { id: 14, statement: '研究雪花飘落时的旋转姿态，雪花可以看作质点。', answer: false, explanation: '❌ 错误。旋转姿态与雪花形状和空气阻力有关，不能忽略。' },
+            { id: 15, statement: '研究小船渡河时的位移，小船可以看作质点。', answer: true, explanation: '✅ 正确。渡河位移是整体移动，船身尺寸可忽略。' }
+        ];
+
+        // =============================================================
+        //  工具
+        // =============================================================
+
+        // 生成随机两位数（第一位1-3，第二位1-9）
+        function generateDraw() {
+            const first = Math.floor(Math.random() * 3) + 1; // 1,2,3
+            const second = Math.floor(Math.random() * 9) + 1; // 1-9
+            return first * 10 + second;
+        }
+
+        // =============================================================
+        //  渲染第一部分：描述性问题
+        // =============================================================
+
+        function renderDescriptions() {
+            const container = document.getElementById('description-list');
+            container.innerHTML = '';
+            DESCRIPTION_QUESTIONS.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `
+                    <div class="q-content">
+                        <div class="q-text"><strong>${index+1}.</strong> ${q.text}</div>
+                        <div class="q-hint"><i>💡 思考</i> ${q.hint}</div>
+                    </div>
+                    <div class="draw-section">
+                        <button class="btn-draw" data-target="draw-${q.id}">🎲 随机抽签</button>
+                        <div class="draw-result" id="draw-${q.id}">--</div>
+                    </div>
+                `;
+                container.appendChild(div);
+
+                // 绑定抽签事件
+                const btn = div.querySelector('.btn-draw');
+                const resultDiv = div.querySelector('.draw-result');
+                btn.addEventListener('click', function() {
+                    const num = generateDraw();
+                    resultDiv.textContent = num;
+                    // 简单动画反馈
+                    resultDiv.style.transition = 'transform 0.1s';
+                    resultDiv.style.transform = 'scale(1.2)';
+                    setTimeout(() => { resultDiv.style.transform = 'scale(1)'; }, 150);
+                });
+            });
+        }
+
+        // =============================================================
+        //  渲染第三部分：判断练习（保持不变）
+        // =============================================================
+
+        function renderJudges() {
+            const container = document.getElementById('judge-list');
+            container.innerHTML = '';
+            JUDGE_QUESTIONS.forEach((q) => {
+                const item = document.createElement('div');
+                item.className = 'judge-item';
+                item.dataset.qid = q.id;
+
+                const feedbackId = `feedback-${q.id}`;
+
+                item.innerHTML = `
+                    <div class="j-content">
+                        <div class="j-statement"><strong>${q.id}.</strong> ${q.statement}</div>
+                        <div class="j-actions">
+                            <label><input type="radio" name="judge_${q.id}" value="true" /> ✅ 正确</label>
+                            <label><input type="radio" name="judge_${q.id}" value="false" /> ❌ 错误</label>
+                            <button class="btn-submit" data-qid="${q.id}">提交判断</button>
+                            <button class="btn-clear" data-qid="${q.id}">清除</button>
+                            <span style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                                <button class="btn-draw" style="background:#d97706;" data-target="draw-j-${q.id}">🎯 抽签</button>
+                                <span class="draw-result" id="draw-j-${q.id}" style="min-width:40px;">--</span>
+                            </span>
+                        </div>
+                        <div class="judge-feedback" id="${feedbackId}"></div>
+                    </div>
+                `;
+
+                container.appendChild(item);
+
+                // ---- 绑定抽签 ----
+                const drawBtn = item.querySelector('.btn-draw');
+                const drawResult = item.querySelector(`#draw-j-${q.id}`);
+                drawBtn.addEventListener('click', function() {
+                    const num = generateDraw();
+                    drawResult.textContent = num;
+                    drawResult.style.transition = 'transform 0.1s';
+                    drawResult.style.transform = 'scale(1.2)';
+                    setTimeout(() => { drawResult.style.transform = 'scale(1)'; }, 150);
+                });
+
+                // ---- 绑定提交判断 ----
+                const submitBtn = item.querySelector('.btn-submit');
+                submitBtn.addEventListener('click', function() {
+                    const qid = parseInt(this.dataset.qid);
+                    const question = JUDGE_QUESTIONS.find(q => q.id === qid);
+                    if (!question) return;
+
+                    const radios = item.querySelectorAll(`input[name="judge_${qid}"]`);
+                    let selected = null;
+                    radios.forEach(r => { if (r.checked) selected = r.value; });
+                    if (!selected) {
+                        alert('请先选择一个选项（正确/错误）！');
+                        return;
+                    }
+
+                    const userAnswer = (selected === 'true');
+                    const correct = question.answer;
+                    const feedback = item.querySelector(`#${feedbackId}`);
+                    feedback.classList.remove('show', 'correct', 'wrong');
+
+                    if (userAnswer === correct) {
+                        feedback.classList.add('show', 'correct');
+                        feedback.innerHTML = `✅ 判断正确！<br /><span class="explain">${question.explanation}</span>`;
+                    } else {
+                        feedback.classList.add('show', 'wrong');
+                        feedback.innerHTML = `❌ 判断错误。<br /><span class="explain">${question.explanation}</span>`;
+                    }
+
+                    submitBtn.disabled = true;
+                    radios.forEach(r => r.disabled = true);
+                });
+
+                // ---- 绑定清除 ----
+                const clearBtn = item.querySelector('.btn-clear');
+                clearBtn.addEventListener('click', function() {
+                    const qid = parseInt(this.dataset.qid);
+                    const feedback = item.querySelector(`#${feedbackId}`);
+                    feedback.classList.remove('show', 'correct', 'wrong');
+                    feedback.innerHTML = '';
+                    const radios = item.querySelectorAll(`input[name="judge_${qid}"]`);
+                    radios.forEach(r => { r.checked = false; r.disabled = false; });
+                    const submitBtn = item.querySelector('.btn-submit');
+                    submitBtn.disabled = false;
+                });
+            });
+        }
+
+        // =============================================================
+        //  初始化
+        // =============================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderDescriptions();
+            renderJudges();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>生成课件清单</title>
+<style>
+  body { font-family: system-ui, "Microsoft YaHei", sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+  h1 { color: #0969da; }
+  button { padding: 10px 20px; font-size: 16px; background: #0969da; color: #fff; border: none; border-radius: 6px; cursor: pointer; margin: 10px 6px 10px 0; }
+  button.secondary { background: #6e7781; }
+  pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow: auto; max-height: 400px; }
+  .tip { color: #57606a; font-size: 14px; }
+  .stat { margin: 10px 0; color: #24292f; }
+</style>
+</head>
+<body>
+
+<h1>生成课件清单</h1>
+<p class="tip">
+  可以一次选“物理课件”根目录，也可以分多次选“必修一”“必修二”等文件夹。<br>
+  工具会累积文件，最后只生成一个 <code>courses.js</code>。
+</p>
+
+<input type="file" id="picker" webkitdirectory multiple style="display:none">
+<button onclick="picker.click()">添加文件夹</button>
+<button onclick="generate()">生成 courses.js</button>
+<button onclick="download()">下载 courses.js</button>
+<button class="secondary" onclick="clearAll()">清空</button>
+
+<div class="stat" id="stat">已添加 0 个文件</div>
+<h3>扫描结果预览：</h3>
+<pre id="preview">还没有扫描</pre>
+
+<script>
+  const picker = document.getElementById('picker');
+  const preview = document.getElementById('preview');
+  const stat = document.getElementById('stat');
+
+  const GROUP_ORDER = ['必修一', '必修二', '必修三', '选择性必修一', '选择性必修二', '选择性必修三'];
+  const EXCLUDE_FILES = ['index.html', '生成清单.html'];
+
+  let collected = [];
+  let generated = '';
+
+  function isGroupName(s) {
+    return GROUP_ORDER.includes(s) || /^(必修|选择性必修)/.test(s);
+  }
+
+  picker.addEventListener('change', () => {
+    const files = [...picker.files];
+    if (!files.length) return;
+
+    for (const f of files) {
+      const parts = f.webkitRelativePath.split('/').filter(Boolean);
+      const fileName = parts[parts.length - 1];
+      const lower = fileName.toLowerCase();
+
+      if (!lower.endsWith('.html')) continue;
+      if (EXCLUDE_FILES.some(x => x.toLowerCase() === lower)) continue;
+
+      let groupIndex = parts.findIndex(isGroupName);
+      let group, rel;
+
+      if (groupIndex !== -1) {
+        group = parts[groupIndex];
+        rel = parts.slice(groupIndex).join('/');
+      } else {
+        group = '未分类';
+        rel = parts.join('/');
+      }
+
+      const name = fileName.replace(/\.html$/i, '');
+      collected.push({ group, rel, name });
+    }
+
+    const seen = new Set();
+    collected = collected.filter(item => {
+      if (seen.has(item.rel)) return false;
+      seen.add(item.rel);
+      return true;
+    });
+
+    picker.value = '';
+    updateStat();
+    preview.textContent = '已添加文件，点“生成 courses.js”查看结果';
+    generated = '';
+  });
+
+  function updateStat() {
+    const groups = new Set(collected.map(x => x.group));
+    stat.textContent = `已添加 ${collected.length} 个文件，${groups.size} 个册`;
+  }
+
+  function generate() {
+    if (!collected.length) { alert('请先添加文件夹'); return; }
+
+    const map = new Map();
+    for (const item of collected) {
+      if (!map.has(item.group)) map.set(item.group, []);
+      map.get(item.group).push(item);
+    }
+
+    const groups = [...map.keys()].sort((a, b) => {
+      const ia = GROUP_ORDER.indexOf(a), ib = GROUP_ORDER.indexOf(b);
+      if (ia === -1 && ib === -1) return a.localeCompare(b, 'zh');
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+
+    const body = groups.map(g => {
+      const items = map.get(g)
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+        .map(item => {
+          return `      { name: ${JSON.stringify(item.name)}, path: ${JSON.stringify(item.rel)} }`;
+        })
+        .join(',\n');
+      return `  {\n    group: ${JSON.stringify(g)},\n    items: [\n${items}\n    ]\n  }`;
+    }).join(',\n');
+
+    generated = 'const courseGroups = [\n' + body + '\n];\n';
+    preview.textContent = generated;
+  }
+
+  function download() {
+    if (!generated) { alert('请先点“生成 courses.js”'); return; }
+    const blob = new Blob([generated], { type: 'text/javascript' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'courses.js';
+    a.click();
+  }
+
+  function clearAll() {
+    collected = [];
+    generated = '';
+    picker.value = '';
+    updateStat();
+    preview.textContent = '还没有扫描';
+  }
+</script>
+
+</body>
+</html>

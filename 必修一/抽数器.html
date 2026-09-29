@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 随机数字抽取器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #0d1b2a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            user-select: none;
+        }
+        .card {
+            background: #162a40;
+            border-radius: 40px;
+            padding: 40px 44px 36px;
+            max-width: 460px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            border: 1px solid #2a4a6a;
+            text-align: center;
+        }
+        h1 { color: #e8f0ff; font-size: 1.5rem; margin-bottom: 4px; }
+        .sub {
+            color: #8aaac8;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #2a4a6a;
+        }
+        .sub span {
+            background: #1a3a5a;
+            padding: 2px 12px;
+            border-radius: 30px;
+            color: #7ab8f0;
+            font-weight: 600;
+            margin: 0 4px;
+        }
+        .number-display {
+            background: #0a1828;
+            border-radius: 28px;
+            padding: 30px 20px 26px;
+            margin-bottom: 26px;
+            border: 1px solid #2a4a6a;
+            min-height: 130px;
+            position: relative;
+            transition: border-color 0.3s;
+        }
+        .number-display.pop { border-color: #5ad87a; box-shadow: 0 0 40px rgba(90,216,122,0.1); }
+        .big-number {
+            font-size: 5rem;
+            font-weight: 800;
+            color: #f0f8ff;
+            letter-spacing: 6px;
+            line-height: 1.2;
+            transition: transform 0.2s;
+        }
+        .big-number.pop-anim {
+            animation: pop 0.4s ease forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.6); opacity: 0.2; }
+            50% { transform: scale(1.2); opacity: 1; }
+            70% { transform: scale(0.92); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .hint-text { color: #5a7a9a; font-size: 0.82rem; margin-top: 6px; }
+        .range-tag {
+            position: absolute;
+            top: 10px;
+            right: 16px;
+            font-size: 0.7rem;
+            background: #1a3a5a;
+            color: #6a9aba;
+            padding: 2px 12px;
+            border-radius: 30px;
+            border: 1px solid #2a4a6a;
+        }
+        .btn-draw {
+            background: linear-gradient(to bottom, #2a6a9a, #1a4a7a);
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            padding: 16px 20px;
+            border-radius: 60px;
+            cursor: pointer;
+            width: 100%;
+            border: 1px solid #3a7aaa;
+            box-shadow: 0 6px 24px rgba(42,106,154,0.3);
+            transition: all 0.2s;
+        }
+        .btn-draw:hover { background: linear-gradient(to bottom, #3a7aba, #2a5a8a); transform: scale(1.02); }
+        .btn-draw:active { transform: scale(0.97); }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 18px;
+            padding: 12px 6px 0;
+            border-top: 1px solid #2a4a6a;
+            color: #5a7a9a;
+            font-size: 0.78rem;
+            flex-wrap: wrap;
+        }
+        .stats .stat-item { display: flex; align-items: center; gap: 6px; }
+        .stats .stat-item .num { color: #b0c8e8; font-weight: 700; font-size: 0.95rem; min-width: 28px; }
+        .stats .stat-item .badge-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #4a8a4a; display: inline-block;
+        }
+        .btn-reset {
+            background: transparent;
+            border: 1px solid #2a4a6a;
+            color: #5a7a9a;
+            padding: 4px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+        .btn-reset:hover { background: #1a2a3a; color: #8aaac8; border-color: #4a6a8a; }
+        .history {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #2a4a6a;
+            text-align: left;
+        }
+        .history .h-title {
+            color: #5a7a9a;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .history .h-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 26px;
+        }
+        .history .h-list .h-item {
+            background: #1a2a3a;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #b0c8e8;
+            border: 1px solid #2a4a6a;
+        }
+        .history .h-list .h-item:last-child {
+            background: #1a4a3a;
+            border-color: #4a8a6a;
+            color: #8ad8a0;
+        }
+        .history .h-empty { color: #3a5a6a; font-size: 0.8rem; font-style: italic; }
+        .shortcut-hint {
+            color: #3a5a6a;
+            font-size: 0.7rem;
+            margin-top: 10px;
+        }
+        .shortcut-hint kbd {
+            background: #1a2a3a;
+            padding: 1px 8px;
+            border-radius: 4px;
+            border: 1px solid #2a4a6a;
+            font-family: inherit;
+            color: #6a8aaa;
+        }
+        @media (max-width: 420px) {
+            .card { padding: 24px 16px 20px; }
+            .big-number { font-size: 3.6rem; }
+            .number-display { padding: 20px 12px 16px; min-height: 100px; }
+            .btn-draw { font-size: 1rem; padding: 14px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>🎲 随机数字抽取</h1>
+    <div class="sub"><span>十位 1–3</span> · <span>个位 1–9</span></div>
+
+    <div class="number-display" id="displayArea">
+        <span class="range-tag" id="rangeTag">11–39</span>
+        <div class="big-number" id="bigNumber">??</div>
+        <div class="hint-text" id="hintText">点击按钮或按空格抽取</div>
+    </div>
+
+    <button class="btn-draw" id="drawBtn">🎯 抽 取 数 字</button>
+
+    <div class="stats">
+        <span class="stat-item">
+            <span class="badge-dot"></span>
+            <span class="label">已抽</span>
+            <span class="num" id="countDisplay">0</span>
+        </span>
+        <span class="stat-item">
+            <span class="label">当前</span>
+            <span class="num" id="currentDisplay">--</span>
+        </span>
+        <button class="btn-reset" id="resetBtn">↺ 清空记录</button>
+    </div>
+
+    <div class="history">
+        <div class="h-title">
+            <span>📋 历史记录</span>
+            <span id="historyCount">0 条</span>
+        </div>
+        <div class="h-list" id="historyList">
+            <span class="h-empty">还没有抽取记录</span>
+        </div>
+    </div>
+
+    <div class="shortcut-hint">
+        💡 快捷键 <kbd>空格</kbd> 或 <kbd>Enter</kbd> 抽取 · <kbd>R</kbd> 重置
+    </div>
+</div>
+
+<script>
+    (function() {
+        var bigNumber = document.getElementById('bigNumber');
+        var hintText = document.getElementById('hintText');
+        var displayArea = document.getElementById('displayArea');
+        var drawBtn = document.getElementById('drawBtn');
+        var resetBtn = document.getElementById('resetBtn');
+        var countDisplay = document.getElementById('countDisplay');
+        var currentDisplay = document.getElementById('currentDisplay');
+        var historyList = document.getElementById('historyList');
+        var historyCount = document.getElementById('historyCount');
+        var rangeTag = document.getElementById('rangeTag');
+
+        var history = [];
+        var currentNumber = null;
+        var popTimeout = null;
+
+        function generateRandomNumber() {
+            var tens = Math.floor(Math.random() * 3) + 1;
+            var units = Math.floor(Math.random() * 9) + 1;
+            return tens * 10 + units;
+        }
+
+        function updateDisplay(number) {
+            bigNumber.textContent = number;
+            bigNumber.className = 'big-number';
+            void bigNumber.offsetWidth;
+            bigNumber.className = 'big-number pop-anim';
+
+            var tens = Math.floor(number / 10);
+            var units = number % 10;
+            hintText.textContent = '十位 ' + tens + ' · 个位 ' + units;
+            currentDisplay.textContent = number;
+            rangeTag.textContent = '' + tens + units;
+
+            displayArea.className = 'number-display pop';
+            if (popTimeout) clearTimeout(popTimeout);
+            popTimeout = setTimeout(function() {
+                displayArea.className = 'number-display';
+            }, 500);
+        }
+
+        function updateStats() {
+            countDisplay.textContent = history.length;
+            historyCount.textContent = history.length + ' 条';
+        }
+
+        function updateHistory() {
+            if (history.length === 0) {
+                historyList.innerHTML = '<span class="h-empty">还没有抽取记录</span>';
+                return;
+            }
+            var items = history.slice(-20).reverse();
+            var html = '';
+            for (var i = 0; i < items.length; i++) {
+                html += '<span class="h-item">' + items[i] + '</span>';
+            }
+            historyList.innerHTML = html;
+        }
+
+        function drawNumber() {
+            var num = generateRandomNumber();
+            currentNumber = num;
+            history.push(num);
+            if (history.length > 100) history.shift();
+            updateDisplay(num);
+            updateStats();
+            updateHistory();
+        }
+
+        function resetHistory() {
+            if (history.length === 0) return;
+            if (!confirm('确定清空所有历史记录吗？')) return;
+            history = [];
+            currentNumber = null;
+            bigNumber.textContent = '??';
+            bigNumber.className = 'big-number';
+            hintText.textContent = '点击按钮或按空格抽取';
+            currentDisplay.textContent = '--';
+            displayArea.className = 'number-display';
+            rangeTag.textContent = '11–39';
+            updateStats();
+            updateHistory();
+        }
+
+        drawBtn.addEventListener('click', drawNumber);
+        resetBtn.addEventListener('click', resetHistory);
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === ' ' || e.key === 'Space' || e.key === 'Enter') {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                e.preventDefault();
+                drawNumber();
+            }
+            if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey) {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                    resetHistory();
+                }
+            }
+        });
+
+        // 初次启动自动抽取一个数字
+        var initNum = generateRandomNumber();
+        history.push(initNum);
+        updateDisplay(initNum);
+        updateStats();
+        updateHistory();
+    })();
+</script>
+</body>
+</html>

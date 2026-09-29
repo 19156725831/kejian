@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>参考系概念 · 课堂互动</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #f0f4f8;
+            color: #1e293b;
+            padding: 24px 20px 60px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .main-header {
+            text-align: center;
+            margin-bottom: 28px;
+            background: linear-gradient(135deg, #1e3a5f, #2a5f8f);
+            padding: 28px 20px 22px;
+            border-radius: 28px;
+            color: #fff;
+            box-shadow: 0 12px 30px rgba(26, 67, 113, 0.30);
+        }
+        .main-header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .main-header .sub {
+            font-size: 1.05rem;
+            opacity: 0.85;
+            margin-top: 6px;
+        }
+
+        .concept-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            margin: 28px 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            border-left: 6px solid #2a5f8f;
+        }
+        .concept-card h2 {
+            font-size: 1.4rem;
+            color: #1e3a5f;
+            margin-bottom: 12px;
+        }
+        .concept-card p {
+            line-height: 1.8;
+            font-size: 1rem;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+        .concept-card .highlight {
+            background: #eef6ff;
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-top: 12px;
+            border: 1px dashed #7aa9d9;
+        }
+        .concept-card .highlight strong {
+            color: #1e4a7a;
+        }
+
+        /* ---- 四大特性网格 ---- */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 18px;
+        }
+        .feature-item {
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 16px 18px;
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.2s, transform 0.15s;
+            cursor: default;
+        }
+        .feature-item:hover {
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        .feature-item .feat-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #1e3a5f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .feature-item .feat-title .badge {
+            background: #2a5f8f;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 0 10px;
+            border-radius: 30px;
+            line-height: 1.8;
+            font-weight: 600;
+        }
+        .feature-item p {
+            font-size: 0.95rem;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+        .feature-item .feat-example {
+            font-size: 0.88rem;
+            color: #5a6a7a;
+            background: #eef2f6;
+            padding: 6px 12px;
+            border-radius: 10px;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .question-item {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 18px 22px 22px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.2s;
+        }
+        .question-item:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+        }
+        .question-item .q-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 12px 20px;
+            margin-bottom: 8px;
+        }
+        .question-item .q-content {
+            flex: 1;
+            min-width: 200px;
+        }
+        .question-item .q-content .q-text {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #0f172a;
+        }
+        .question-item .q-hint {
+            font-size: 0.92rem;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 4px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .question-item .q-hint i {
+            font-style: normal;
+            background: #dbeafe;
+            padding: 1px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1e4a7a;
+            margin-right: 6px;
+        }
+        .question-item .draw-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .btn-draw {
+            background: #2a5f8f;
+            color: #fff;
+            border: none;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 2px 8px rgba(42, 95, 143, 0.25);
+        }
+        .btn-draw:hover {
+            background: #1e4a7a;
+            transform: translateY(-2px);
+        }
+        .btn-draw:active {
+            transform: translateY(0);
+        }
+        .draw-result {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2a5f8f;
+            background: #eef6ff;
+            padding: 2px 14px;
+            border-radius: 30px;
+            min-width: 50px;
+            text-align: center;
+            border: 1px solid #bdd9f0;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ---- 答案折叠区域 ---- */
+        .answer-toggle {
+            margin-top: 14px;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 12px;
+        }
+        .btn-answer {
+            background: #e9edf2;
+            border: 1px solid #94a3b8;
+            color: #334155;
+            padding: 4px 18px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-answer:hover {
+            background: #d1d9e6;
+            border-color: #64748b;
+        }
+        .btn-answer.active {
+            background: #dbeafe;
+            border-color: #2a5f8f;
+            color: #1e3a5f;
+        }
+        .answer-content {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #2a5f8f;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #1e293b;
+        }
+        .answer-content.show {
+            display: block;
+        }
+        .answer-content .ans-label {
+            font-weight: 700;
+            color: #1e3a5f;
+            margin-right: 6px;
+        }
+
+        .judge-area {
+            margin-top: 28px;
+            border-top: 4px solid #d97706;
+            padding-top: 20px;
+        }
+        .judge-area .section-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #92400e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .judge-item {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 18px 22px 22px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 14px;
+        }
+        .judge-item .j-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 12px 20px;
+        }
+        .judge-item .j-content {
+            flex: 1;
+            min-width: 200px;
+        }
+        .judge-item .j-content .j-statement {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #0f172a;
+        }
+        .judge-item .j-content .j-actions {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .judge-item .j-content .j-actions label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 4px 12px 4px 6px;
+            border-radius: 30px;
+            background: #f1f5f9;
+            transition: background 0.15s;
+        }
+        .judge-item .j-content .j-actions label:hover {
+            background: #e2e8f0;
+        }
+        .judge-item .j-content .j-actions input[type="radio"] {
+            accent-color: #2a5f8f;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .btn-submit {
+            background: #0b7e4b;
+            color: #fff;
+            border: none;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit:hover {
+            background: #09653b;
+        }
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-clear {
+            background: #e9edf2;
+            border: 1px solid #94a3b8;
+            color: #334155;
+            padding: 4px 14px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .btn-clear:hover {
+            background: #d1d9e6;
+        }
+        .judge-feedback {
+            margin-top: 10px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 500;
+            display: none;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        .judge-feedback.show {
+            display: block;
+        }
+        .judge-feedback.correct {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #14532d;
+        }
+        .judge-feedback.wrong {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #7f1d1d;
+        }
+        .judge-feedback .explain {
+            font-weight: 400;
+            color: #334155;
+        }
+
+        @media (max-width: 640px) {
+            .main-header h1 {
+                font-size: 1.6rem;
+            }
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .question-item .q-header,
+            .judge-item .j-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .question-item .draw-section {
+                justify-content: flex-end;
+            }
+            .draw-result {
+                min-width: 40px;
+            }
+        }
+        .text-muted {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        .mt-4 {
+            margin-top: 24px;
+        }
+        .mb-2 {
+            margin-bottom: 8px;
+        }
+        .section-label {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1e3a5f;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            margin-top: 4px;
+        }
+        .sub-label {
+            font-size: 0.95rem;
+            color: #64748b;
+            font-weight: 400;
+            margin-left: 8px;
+        }
+        .footer-note {
+            text-align: center;
+            margin-top: 32px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 标题 -->
+        <header class="main-header">
+            <h1>🔄 参考系概念 · 课堂互动</h1>
+            <div class="sub">描述运动 → 总结参考系定义 → 判断练习</div>
+        </header>
+
+        <!-- ======== 第一部分：描述性提问 ======== -->
+        <div style="margin-bottom: 12px;">
+            <div class="section-label">
+                <span>📝</span> 描述下列情境中的运动
+                <span class="sub-label">（思考：参考系如何影响运动描述？）</span>
+            </div>
+            <div class="question-list" id="description-list">
+                <!-- 由 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <!-- ======== 第二部分：参考系定义 + 四大特性 ======== -->
+        <div class="concept-card">
+            <h2>📖 什么是参考系？</h2>
+            <p><strong>参考系</strong> 是物理学中为了描述物体的运动而选作 <strong>参考</strong> 的物体或系统。一个物体的运动状态（位置、速度、加速度）只有在选择了参考系之后才有明确的意义。</p>
+            <div class="highlight">
+                <strong>🧠 参考系的意义：</strong> 运动是 <strong>相对的</strong>，选择不同的参考系，对同一物体运动的描述可能 <strong>完全不同</strong>。<br />
+                <strong>⚖️ 判断关键：</strong> 描述运动时必须 <strong>明确参考系</strong>，否则结论没有意义。<br />
+                <span style="font-size:0.92rem; color:#475569;">✨ 例如：地面上的人看匀速行驶的火车上掉落的小球，其轨迹是抛物线；而火车上的人看小球则是自由落体（竖直下落）。</span>
+            </div>
+
+            <!-- ★★★ 四大特性 ★★★ -->
+            <div style="margin-top: 18px;">
+                <div style="font-weight:700; font-size:1.1rem; color:#1e3a5f; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+                    <span>🔑</span> 参考系的四大特性
+                </div>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feat-title">
+                            <span>🌐</span> 相对性
+                            <span class="badge">核心</span>
+                        </div>
+                        <p>运动描述具有 <strong>相对性</strong>：同一物体相对于不同参考系，其运动状态（静止、速度、轨迹）可能完全不同。不存在绝对静止的参考系。</p>
+                        <span class="feat-example">📌 例：地面上的人看匀速行驶的火车上抛出的球，轨迹为抛物线；火车上的人看则为竖直下落。</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feat-title">
+                            <span>🎯</span> 任意性
+                            <span class="badge">灵活</span>
+                        </div>
+                        <p>参考系的选择是 <strong>任意的</strong>，可以根据研究问题的方便程度自由选择。通常选择地面或相对地面静止的物体作为参考系。</p>
+                        <span class="feat-example">📌 例：研究车内物体的运动，可选车为参考系；研究地球公转，可选太阳为参考系。</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feat-title">
+                            <span>🔗</span> 同一性
+                            <span class="badge">规范</span>
+                        </div>
+                        <p>在描述同一物体的运动时，必须使用 <strong>同一</strong> 参考系，否则比较不同时刻或不同物体的运动状态将失去意义。</p>
+                        <span class="feat-example">📌 例：说“甲相对于乙静止”时，必须明确甲和乙都相对同一参考系（如地面）静止。</span>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feat-title">
+                            <span>⚡</span> 差异性
+                            <span class="badge">关键</span>
+                        </div>
+                        <p>选择不同参考系，对同一运动的描述存在 <strong>差异</strong>。这种差异体现在速度、位移、轨迹等方面，这正是运动相对性的体现。</p>
+                        <span class="feat-example">📌 例：以地面为参考系，行驶的汽车中的人在做匀速直线运动；以汽车为参考系，人静止。</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======== 第三部分：判断练习 ======== -->
+        <div class="judge-area">
+            <div class="section-title">
+                <span>✅</span> 参考系判断练习（每个题目独立抽签）
+            </div>
+            <div id="judge-list">
+                <!-- 由 JavaScript 动态生成 -->
+            </div>
+        </div>
+
+        <div class="footer-note">
+            🧪 人教版 · 物理必修第一册 · 参考系 &nbsp;|&nbsp; 课堂互动
+        </div>
+    </div>
+
+    <script>
+        // =============================================================
+        //  数据
+        // =============================================================
+
+        // ---- 描述性问题（第一部分） ----
+        const DESCRIPTION_QUESTIONS = [{
+            id: 1,
+            text: '请描述坐在行驶的汽车中观察路边的树木，树木是静止还是运动？为什么会有这样的感觉？',
+            hint: '你选择的参考系是什么？是地面还是汽车？',
+            answer: '以地面为参考系，树木是静止的；以汽车为参考系，树木是向后运动的。感觉不同是因为选择的参考系不同。'
+        }, {
+            id: 2,
+            text: '在匀速行驶的火车上，竖直向上抛出一个小球，小球会落回手中还是落在抛出点的后方？请解释。',
+            hint: '以火车为参考系，小球在水平方向是静止的；以地面为参考系呢？',
+            answer: '小球会落回手中。因为小球具有与火车相同的水平速度（惯性），以火车为参考系，小球在水平方向保持静止，竖直方向做竖直上抛运动，所以落回手中。'
+        }, {
+            id: 3,
+            text: '地球同步卫星相对于地面是静止的，但相对于太阳是运动的。请解释这一现象。',
+            hint: '同步卫星与地球自转同步，以地面为参考系静止；以太阳为参考系，卫星随地球一起绕太阳运动。',
+            answer: '以地面为参考系，同步卫星与地球保持相对静止；以太阳为参考系，卫星随地球绕太阳运动，因此是运动的。这体现了运动的相对性。'
+        }, {
+            id: 4,
+            text: '在行驶的船上，一个人从船头走到船尾。以岸为参考系，此人如何运动？以船为参考系呢？',
+            hint: '两个参考系下，人的运动轨迹和速度是否相同？',
+            answer: '以岸为参考系，人随船一起运动，同时还在船上行走，其运动轨迹是一条曲线（合运动）。以船为参考系，人只做从船头到船尾的直线运动。两者描述不同。'
+        }, {
+            id: 5,
+            text: '月亮在云朵中穿行——这种描述中，参考系是什么？若换一个参考系，描述会如何变化？',
+            hint: '通常以云为参考系，感觉月亮在运动。若以地面为参考系，云和月亮都在运动。',
+            answer: '“月亮在云朵中穿行”是以云朵为参考系，此时月亮是运动的。若以地面为参考系，月亮和云朵都在运动（云朵飘动，月亮缓慢东移），但相对运动关系不同。'
+        }, {
+            id: 6,
+            text: '甲、乙两人并肩坐在匀速行驶的汽车里，甲说乙是静止的，乙说甲是静止的。他们说得对吗？为什么？',
+            hint: '他们以彼此为参考系，对方是静止的。以地面为参考系，两人都在运动。',
+            answer: '他们说得对。以甲（或乙）为参考系，乙（或甲）是静止的；但以地面为参考系，两人都在运动。这说明了参考系的相对性，两人选择的参考系不同。'
+        }];
+
+        // ---- 判断练习（第三部分） ----
+        const JUDGE_QUESTIONS = [{
+            id: 1,
+            statement: '参考系必须选择静止的物体。',
+            answer: false,
+            explanation: '❌ 错误。参考系可以任意选择，可以是运动的物体，只要方便描述即可。'
+        }, {
+            id: 2,
+            statement: '同一物体选择不同的参考系，其运动状态可能不同。',
+            answer: true,
+            explanation: '✅ 正确。运动是相对的，不同参考系下描述可能不同。'
+        }, {
+            id: 3,
+            statement: '研究地球自转时，选择地心为参考系比较方便。',
+            answer: true,
+            explanation: '✅ 正确。研究自转时，地心参考系能清晰描述地面各点的运动。'
+        }, {
+            id: 4,
+            statement: '在匀速行驶的火车上，乘客以火车为参考系，看到窗外的树木向后运动。',
+            answer: true,
+            explanation: '✅ 正确。火车向前，以火车为参考系，树木相对向后。'
+        }, {
+            id: 5,
+            statement: '以地面为参考系，匀速飞行的飞机上的乘客是静止的。',
+            answer: false,
+            explanation: '❌ 错误。以地面为参考系，飞机和乘客都在运动，并非静止。'
+        }, {
+            id: 6,
+            statement: '研究物体运动时，参考系的选择是任意的，但为了简单，通常选地面。',
+            answer: true,
+            explanation: '✅ 正确。参考系任意，但地面常用作默认参考系。'
+        }, {
+            id: 7,
+            statement: '在匀速运动的火车上，以火车为参考系，竖直向上抛出的球仍会落回手中。',
+            answer: true,
+            explanation: '✅ 正确。由于惯性，球水平方向保持与火车相同的速度，故落回手中。'
+        }, {
+            id: 8,
+            statement: '地球同步卫星相对于太阳是静止的。',
+            answer: false,
+            explanation: '❌ 错误。同步卫星相对于地面静止，但相对于太阳随地球绕太阳运动。'
+        }, {
+            id: 9,
+            statement: '描述物体运动时，必须明确参考系，否则结论无意义。',
+            answer: true,
+            explanation: '✅ 正确。运动描述具有相对性，必须指明参考系。'
+        }, {
+            id: 10,
+            statement: '以加速运动的汽车为参考系，车内的物体都受惯性力，但惯性力不是真实力。',
+            answer: true,
+            explanation: '✅ 正确。非惯性系中引入惯性力，但惯性力并不存在施力物体。'
+        }, {
+            id: 11,
+            statement: '在行驶的船上，以船为参考系，船上的乘客是静止的。',
+            answer: true,
+            explanation: '✅ 正确。以船为参考系，船上的物体相对船是静止的（忽略微小晃动）。'
+        }, {
+            id: 12,
+            statement: '参考系一旦选定，就不能再改变。',
+            answer: false,
+            explanation: '❌ 错误。参考系可以任意选择，不同问题可选择不同参考系。'
+        }, {
+            id: 13,
+            statement: '研究导弹飞行轨迹时，以地面为参考系最方便。',
+            answer: true,
+            explanation: '✅ 正确。通常以地面为参考系描述导弹的运动轨迹。'
+        }, {
+            id: 14,
+            statement: '在宇宙中，任何物体都可以作为参考系，没有绝对静止的物体。',
+            answer: true,
+            explanation: '✅ 正确。运动是相对的，不存在绝对静止的参考系。'
+        }, {
+            id: 15,
+            statement: '以太阳为参考系，地球上的所有物体都在做圆周运动。',
+            answer: true,
+            explanation: '✅ 正确。以太阳为参考系，地球及其上的物体都绕太阳做近似圆周运动。'
+        }];
+
+        // =============================================================
+        //  工具
+        // =============================================================
+
+        function generateDraw() {
+            const first = Math.floor(Math.random() * 3) + 1;
+            const second = Math.floor(Math.random() * 9) + 1;
+            return first * 10 + second;
+        }
+
+        // =============================================================
+        //  渲染第一部分：描述性问题
+        // =============================================================
+
+        function renderDescriptions() {
+            const container = document.getElementById('description-list');
+            container.innerHTML = '';
+            DESCRIPTION_QUESTIONS.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `
+                        <div class="q-header">
+                            <div class="q-content">
+                                <div class="q-text"><strong>${index+1}.</strong> ${q.text}</div>
+                                <div class="q-hint"><i>💡 思考</i> ${q.hint}</div>
+                            </div>
+                            <div class="draw-section">
+                                <button class="btn-draw" data-target="draw-${q.id}">🎲 随机抽签</button>
+                                <span class="draw-result" id="draw-${q.id}">--</span>
+                            </div>
+                        </div>
+                        <div class="answer-toggle">
+                            <button class="btn-answer" data-target="ans-${q.id}">📖 显示答案</button>
+                            <div class="answer-content" id="ans-${q.id}">
+                                <span class="ans-label">📌 参考答案：</span> ${q.answer}
+                            </div>
+                        </div>
+                    `;
+                container.appendChild(div);
+
+                // 抽签
+                const btn = div.querySelector('.btn-draw');
+                const resultDiv = div.querySelector(`#draw-${q.id}`);
+                btn.addEventListener('click', function() {
+                    const num = generateDraw();
+                    resultDiv.textContent = num;
+                    resultDiv.style.transition = 'transform 0.1s';
+                    resultDiv.style.transform = 'scale(1.2)';
+                    setTimeout(() => { resultDiv.style.transform = 'scale(1)'; }, 150);
+                });
+
+                // 答案切换
+                const ansBtn = div.querySelector('.btn-answer');
+                const ansContent = div.querySelector(`#ans-${q.id}`);
+                ansBtn.addEventListener('click', function() {
+                    const isHidden = ansContent.classList.toggle('show');
+                    ansBtn.textContent = isHidden ? '📖 隐藏答案' : '📖 显示答案';
+                    ansBtn.classList.toggle('active', isHidden);
+                });
+            });
+        }
+
+        // =============================================================
+        //  渲染第三部分：判断练习
+        // =============================================================
+
+        function renderJudges() {
+            const container = document.getElementById('judge-list');
+            container.innerHTML = '';
+            JUDGE_QUESTIONS.forEach((q) => {
+                const item = document.createElement('div');
+                item.className = 'judge-item';
+                item.dataset.qid = q.id;
+
+                const feedbackId = `feedback-${q.id}`;
+                const ansId = `ans-j-${q.id}`;
+
+                item.innerHTML = `
+                        <div class="j-header">
+                            <div class="j-content">
+                                <div class="j-statement"><strong>${q.id}.</strong> ${q.statement}</div>
+                                <div class="j-actions">
+                                    <label><input type="radio" name="judge_${q.id}" value="true" /> ✅ 正确</label>
+                                    <label><input type="radio" name="judge_${q.id}" value="false" /> ❌ 错误</label>
+                                    <button class="btn-submit" data-qid="${q.id}">提交判断</button>
+                                    <button class="btn-clear" data-qid="${q.id}">清除</button>
+                                    <span style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+                                        <button class="btn-draw" style="background:#d97706;" data-target="draw-j-${q.id}">🎯 抽签</button>
+                                        <span class="draw-result" id="draw-j-${q.id}" style="min-width:40px;">--</span>
+                                    </span>
+                                </div>
+                                <div class="judge-feedback" id="${feedbackId}"></div>
+                            </div>
+                        </div>
+                        <div class="answer-toggle">
+                            <button class="btn-answer" data-target="${ansId}">📖 显示答案</button>
+                            <div class="answer-content" id="${ansId}">
+                                <span class="ans-label">📌 正确答案：</span> ${q.answer ? '正确' : '错误'} — ${q.explanation}
+                            </div>
+                        </div>
+                    `;
+
+                container.appendChild(item);
+
+                // 抽签
+                const drawBtn = item.querySelector('.btn-draw');
+                const drawResult = item.querySelector(`#draw-j-${q.id}`);
+                drawBtn.addEventListener('click', function() {
+                    const num = generateDraw();
+                    drawResult.textContent = num;
+                    drawResult.style.transition = 'transform 0.1s';
+                    drawResult.style.transform = 'scale(1.2)';
+                    setTimeout(() => { drawResult.style.transform = 'scale(1)'; }, 150);
+                });
+
+                // 提交判断
+                const submitBtn = item.querySelector('.btn-submit');
+                submitBtn.addEventListener('click', function() {
+                    const qid = parseInt(this.dataset.qid);
+                    const question = JUDGE_QUESTIONS.find(q => q.id === qid);
+                    if (!question) return;
+
+                    const radios = item.querySelectorAll(`input[name="judge_${qid}"]`);
+                    let selected = null;
+                    radios.forEach(r => { if (r.checked) selected = r.value; });
+                    if (!selected) {
+                        alert('请先选择一个选项（正确/错误）！');
+                        return;
+                    }
+
+                    const userAnswer = (selected === 'true');
+                    const correct = question.answer;
+                    const feedback = item.querySelector(`#${feedbackId}`);
+                    feedback.classList.remove('show', 'correct', 'wrong');
+
+                    if (userAnswer === correct) {
+                        feedback.classList.add('show', 'correct');
+                        feedback.innerHTML = `✅ 判断正确！<br /><span class="explain">${question.explanation}</span>`;
+                    } else {
+                        feedback.classList.add('show', 'wrong');
+                        feedback.innerHTML = `❌ 判断错误。<br /><span class="explain">${question.explanation}</span>`;
+                    }
+
+                    submitBtn.disabled = true;
+                    radios.forEach(r => r.disabled = true);
+                });
+
+                // 清除
+                const clearBtn = item.querySelector('.btn-clear');
+                clearBtn.addEventListener('click', function() {
+                    const qid = parseInt(this.dataset.qid);
+                    const feedback = item.querySelector(`#${feedbackId}`);
+                    feedback.classList.remove('show', 'correct', 'wrong');
+                    feedback.innerHTML = '';
+                    const radios = item.querySelectorAll(`input[name="judge_${qid}"]`);
+                    radios.forEach(r => { r.checked = false;
+                        r.disabled = false; });
+                    const submitBtn = item.querySelector('.btn-submit');
+                    submitBtn.disabled = false;
+                });
+
+                // 答案切换
+                const ansBtn = item.querySelector('.btn-answer');
+                const ansContent = item.querySelector(`#${ansId}`);
+                ansBtn.addEventListener('click', function() {
+                    const isHidden = ansContent.classList.toggle('show');
+                    ansBtn.textContent = isHidden ? '📖 隐藏答案' : '📖 显示答案';
+                    ansBtn.classList.toggle('active', isHidden);
+                });
+            });
+        }
+
+        // =============================================================
+        //  初始化
+        // =============================================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderDescriptions();
+            renderJudges();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>位置变化快慢的描述——速度 | 高一物理必修一</title>
+<style>
+/* ============ 全局重置 ============ */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",sans-serif;}
+
+/* ============ 配色变量 ============ */
+:root{
+  --primary:#1a73e8;
+  --primary-dark:#1557b0;
+  --accent:#e8453c;
+  --accent-dark:#c7362e;
+  --bg-light:#f0f4f8;
+  --bg-card:#ffffff;
+  --text-main:#1a1a2e;
+  --text-sub:#555;
+  --success:#2ecc71;
+  --warn:#f39c12;
+  --danger:#e74c3c;
+  --shadow:0 4px 20px rgba(0,0,0,.12);
+  --radius:14px;
+}
+
+/* ============ 幻灯片系统 ============ */
+#app{width:100vw;height:100vh;display:flex;flex-direction:column;background:var(--bg-light);}
+.slide-container{flex:1;position:relative;overflow:hidden;}
+.slide{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:none;flex-direction:column;
+  padding:30px 50px 70px;
+  opacity:0;transform:translateX(60px);
+  transition:opacity .5s ease,transform .5s ease;
+  overflow-y:auto;
+}
+.slide.active{display:flex;opacity:1;transform:translateX(0);}
+
+/* ============ 导航栏 ============ */
+.nav-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 30px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;height:56px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.nav-title{font-size:15px;font-weight:600;letter-spacing:.5px;}
+.nav-controls{display:flex;align-items:center;gap:12px;}
+.nav-btn{
+  background:rgba(255,255,255,.2);border:none;color:#fff;
+  width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .25s;font-weight:bold;
+}
+.nav-btn:hover{background:rgba(255,255,255,.35);}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed;}
+.nav-progress{font-size:13px;min-width:60px;text-align:center;opacity:.9;}
+
+/* ============ 幻灯片底部页码条 ============ */
+.page-dots{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  display:flex;gap:8px;z-index:10;
+}
+.page-dot{
+  width:10px;height:10px;border-radius:50%;background:#ccc;cursor:pointer;
+  transition:all .3s;
+}
+.page-dot.active{background:var(--primary);width:28px;border-radius:5px;}
+
+/* ============ 通用排版 ============ */
+.slide-title{
+  font-size:28px;font-weight:700;color:var(--text-main);
+  margin-bottom:6px;position:relative;padding-left:16px;
+}
+.slide-title::before{
+  content:'';position:absolute;left:0;top:6px;bottom:6px;width:5px;
+  background:linear-gradient(180deg,var(--primary),var(--accent));border-radius:3px;
+}
+.slide-subtitle{font-size:14px;color:var(--text-sub);margin-bottom:18px;padding-left:16px;}
+.slide-body{flex:1;display:flex;flex-direction:column;gap:16px;}
+
+/* ============ 卡片 ============ */
+.card{
+  background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;
+  box-shadow:var(--shadow);
+}
+.card-title{font-size:17px;font-weight:600;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.card-title .icon{font-size:22px;}
+
+/* ============ 高亮/强调 ============ */
+.hl-formula{
+  background:linear-gradient(135deg,#fff3e0,#fff8e1);
+  border:2px solid var(--warn);border-radius:10px;padding:14px 20px;
+  font-size:22px;text-align:center;margin:8px 0;
+}
+.hl-formula sub{font-size:.65em;}
+.hl-key{color:var(--accent);font-weight:600;}
+.hl-blue{color:var(--primary);font-weight:600;}
+
+/* ============ 封面 ============ */
+#slide-0{justify-content:center;align-items:center;text-align:center;background:linear-gradient(160deg,#1a2a6c,#b21f1f,#fdbb2d);}
+#slide-0 .cover-badge{
+  display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);
+  border-radius:30px;padding:6px 20px;color:#fff;font-size:13px;letter-spacing:2px;margin-bottom:24px;
+}
+#slide-0 h1{font-size:46px;color:#fff;margin-bottom:10px;text-shadow:0 3px 10px rgba(0,0,0,.3);}
+#slide-0 .cover-sub{font-size:18px;color:rgba(255,255,255,.8);margin-bottom:30px;}
+#slide-0 .cover-info{display:flex;gap:30px;justify-content:center;margin-top:20px;}
+#slide-0 .cover-info span{color:rgba(255,255,255,.7);font-size:14px;}
+.cover-anim{margin:20px auto;width:300px;height:80px;position:relative;overflow:hidden;border-radius:10px;background:rgba(255,255,255,.08);}
+.cover-anim .runner{
+  position:absolute;bottom:10px;width:36px;height:36px;border-radius:50%;
+  font-size:24px;display:flex;align-items:center;justify-content:center;
+}
+.cover-anim .runner.r1{animation:run 3s linear infinite;}
+.cover-anim .runner.r2{animation:run 3s linear .5s infinite;}
+.cover-anim .runner.r3{animation:run 3s linear 1s infinite;}
+.cover-anim .track{
+  position:absolute;bottom:8px;left:0;right:0;height:2px;
+  background:rgba(255,255,255,.2);
+}
+@keyframes run{0%{left:-40px;}100%{left:300px;}}
+
+/* ============ 表格 ============ */
+.compare-table{width:100%;border-collapse:collapse;font-size:14px;}
+.compare-table th,.compare-table td{border:1px solid #ddd;padding:10px 14px;text-align:center;}
+.compare-table th{background:var(--primary);color:#fff;font-weight:600;}
+.compare-table tr:nth-child(even){background:#f7f9fc;}
+.compare-table td:first-child{font-weight:600;color:var(--primary-dark);}
+
+/* ============ 问题情景 ============ */
+.scenario{
+  background:linear-gradient(135deg,#667eea76,#764ba276);border-radius:var(--radius);
+  padding:20px 24px;color:#fff;
+}
+.scenario-badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:20px;padding:3px 12px;font-size:12px;margin-bottom:8px;}
+.scenario h3{font-size:18px;margin-bottom:8px;}
+.scenario p{font-size:15px;line-height:1.7;}
+
+/* ============ 交互按钮 ============ */
+.btn{
+  background:var(--primary);color:#fff;border:none;border-radius:8px;
+  padding:10px 24px;font-size:14px;cursor:pointer;transition:all .25s;
+}
+.btn:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,115,232,.3);}
+.btn-accent{background:var(--accent);}
+.btn-accent:hover{background:var(--accent-dark);box-shadow:0 4px 12px rgba(232,69,60,.3);}
+.btn-outline{background:transparent;border:2px solid var(--primary);color:var(--primary);}
+.btn-outline:hover{background:var(--primary);color:#fff;}
+
+/* ============ 运动模拟区 ============ */
+.sim-area{
+  background:#1a1a2e;border-radius:var(--radius);padding:16px;
+  position:relative;overflow:hidden;
+}
+.sim-track{height:60px;position:relative;margin:20px 0;background:rgba(255,255,255,.06);border-radius:8px;}
+.sim-object{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:40px;height:40px;border-radius:50%;font-size:24px;
+  display:flex;align-items:center;justify-content:center;
+  transition:left .1s linear;
+}
+.sim-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-size:20px;color:var(--accent);
+}
+.sim-label{
+  position:absolute;bottom:-24px;font-size:12px;color:rgba(255,255,255,.6);
+}
+.sim-ruler{
+  position:relative;height:20px;margin-top:30px;
+  border-top:1px solid rgba(255,255,255,.2);
+}
+.sim-ruler .tick{
+  position:absolute;top:0;width:1px;height:8px;background:rgba(255,255,255,.3);
+}
+.sim-ruler .tick-label{position:absolute;top:10px;font-size:10px;color:rgba(255,255,255,.5);transform:translateX(-50%);}
+.sim-controls{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap;}
+.sim-controls label{color:rgba(255,255,255,.8);font-size:13px;}
+.sim-controls input[type=range]{width:140px;accent-color:var(--primary);}
+.sim-display{
+  position:absolute;top:8px;right:16px;color:#0f0;font-family:monospace;font-size:14px;
+  background:rgba(0,0,0,.3);padding:4px 10px;border-radius:6px;
+}
+
+/* ============ 打点计时器模拟 ============ */
+.tape-sim{background:#2c3e50;border-radius:var(--radius);padding:20px;position:relative;}
+.tape-area{background:#ecf0f1;border-radius:6px;height:80px;position:relative;overflow:hidden;margin:12px 0;}
+.tape-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#bdc3c7;transform:translateY(-50%);}
+.tape-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#e74c3c;border-radius:50%;}
+.tape-mark{position:absolute;top:55%;transform:translateX(-50%);font-size:10px;color:#7f8c8d;}
+.tape-cart{
+  position:absolute;top:30%;transform:translateY(-50%);width:30px;height:30px;
+  font-size:20px;display:flex;align-items:center;justify-content:center;
+}
+
+/* ============ v-t 图 ============ */
+.vt-chart{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);}
+
+/* ============ 练习题 ============ */
+.quiz-question{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin-bottom:14px;}
+.quiz-q{font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text-main);}
+.quiz-opts{display:flex;flex-direction:column;gap:8px;}
+.quiz-opt{
+  padding:10px 16px;border:2px solid #e0e0e0;border-radius:8px;cursor:pointer;
+  font-size:14px;transition:all .25s;background:#fff;
+}
+.quiz-opt:hover{border-color:var(--primary);background:#f0f6ff;}
+.quiz-opt.correct{border-color:var(--success);background:#e8f9f0;}
+.quiz-opt.wrong{border-color:var(--danger);background:#fdeaea;}
+.quiz-feedback{margin-top:10px;font-size:14px;display:none;border-radius:6px;padding:8px 12px;}
+.quiz-feedback.show{display:block;}
+.quiz-feedback.right{background:#e8f9f0;color:#27ae60;}
+.quiz-feedback.miss{background:#fdeaea;color:#c0392b;}
+
+/* ============ 知识链条 ============ */
+.knowledge-chain{display:flex;align-items:center;gap:0;margin:16px 0;flex-wrap:wrap;}
+.chain-node{
+  flex:1;min-width:120px;text-align:center;padding:14px 8px;border-radius:10px;
+  font-size:13px;font-weight:600;
+}
+.chain-node.prev{background:#e8f0fe;color:var(--primary-dark);}
+.chain-node.current{background:var(--primary);color:#fff;transform:scale(1.08);box-shadow:0 4px 15px rgba(26,115,232,.3);}
+.chain-node.next{background:#fff3e0;color:var(--warn);}
+.chain-arrow{flex:0 0 auto;padding:0 6px;color:#bbb;font-size:20px;}
+
+/* ============ 要点提示框 ============ */
+.tip-box{
+  background:#fffbe6;border-left:4px solid var(--warn);border-radius:8px;
+  padding:12px 16px;font-size:14px;line-height:1.7;color:#8a6d3b;margin-top:8px;
+}
+.tip-box.danger{background:#fdeaea;border-color:var(--danger);color:#c0392b;}
+.tip-box.success{background:#e8f9f0;border-color:var(--success);color:#27ae60;}
+
+/* ============ 两栏布局 ============ */
+.two-col{display:flex;gap:16px;}
+.two-col > *{flex:1;}
+
+/* ============ 概念标注 ============ */
+.concept-tag{
+  display:inline-block;background:#e8f0fe;color:var(--primary);border-radius:6px;
+  padding:2px 10px;font-size:12px;font-weight:600;margin:0 3px;
+}
+
+/* ============ 动态箭头 ============ */
+.arrow-flow{display:flex;align-items:center;gap:8px;font-size:14px;}
+.arrow-flow .step{
+  background:var(--bg-card);border:2px solid #e0e0e0;border-radius:8px;
+  padding:8px 16px;font-weight:600;color:var(--text-main);
+}
+.arrow-flow .arr{color:var(--accent);font-size:20px;}
+
+/* ============ 滚动条美化 ============ */
+.slide::-webkit-scrollbar{width:6px;}
+.slide::-webkit-scrollbar-track{background:transparent;}
+.slide::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px;}
+
+/* ============ 响应式 ============ */
+@media(max-width:768px){
+  .slide{padding:16px 18px 60px;}
+  .slide-title{font-size:22px;}
+  .two-col{flex-direction:column;}
+  #slide-0 h1{font-size:30px;}
+  .hl-formula{font-size:18px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 导航栏 -->
+  <div class="nav-bar">
+    <div class="nav-title">📚 高一物理必修一 · 位置变化快慢的描述——速度</div>
+    <div class="nav-controls">
+      <button class="nav-btn" id="btnPrev" onclick="goSlide(-1)">‹</button>
+      <span class="nav-progress" id="navProgress">1 / 12</span>
+      <button class="nav-btn" id="btnNext" onclick="goSlide(1)">›</button>
+    </div>
+  </div>
+
+  <!-- 幻灯片容器 -->
+  <div class="slide-container" id="slideContainer">
+
+    <!-- ========== Slide 0: 封面 ========== -->
+    <div class="slide active" id="slide-0">
+      <span class="cover-badge">人教版 · 高中物理 · 必修第一册</span>
+      <h1>位置变化快慢的描述<br>—— 速度</h1>
+      <p class="cover-sub">第一章 运动的描述 · 第三节</p>
+      <div class="cover-anim">
+        <div class="track"></div>
+        <div class="runner r1">🏃</div>
+        <div class="runner r2">🚗</div>
+        <div class="runner r3">🚲</div>
+      </div>
+      <div class="cover-info">
+        <span>📅 课件 · 1 课时</span>
+        <span>🎯 授课对象：高一学生</span>
+        <span>🔬 实验 + 交互</span>
+      </div>
+    </div>
+
+    <!-- ========== Slide 1: 知识回顾 ========== -->
+    <div class="slide" id="slide-1">
+      <div class="slide-title">知识回顾：位置与位移</div>
+      <div class="slide-subtitle">上节课我们学习了用坐标系描述物体的位置和位置的变化，这是理解速度的基础</div>
+      <div class="slide-body">
+        <!-- 知识链条 -->
+        <div class="knowledge-chain">
+          <div class="chain-node prev">坐标系 &amp; 位置<br><small>✓ 已学</small></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node prev">位移 Δx<br><small>✓ 已学</small></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node current">速度 v<br><small>★ 本节</small></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node next">加速度 a<br><small>下节预告</small></div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">📍</span>位置 x</div>
+            <p style="font-size:14px;line-height:1.8;color:var(--text-sub);">
+              在坐标系中，物体在某时刻所处的坐标值即为<span class="hl-blue">位置</span>。
+            </p>
+            <div style="margin:14px 0;text-align:center;">
+              <svg width="100%" height="60" viewBox="0 0 320 60">
+                <line x1="20" y1="40" x2="300" y2="40" stroke="#999" stroke-width="2" stroke-dasharray="3,3"/>
+                <polygon points="300,40 290,35 290,45" fill="#999"/>
+                <text x="305" y="44" font-size="12" fill="#999">x/m</text>
+                <text x="160" y="22" text-anchor="middle" font-size="12" fill="#1a73e8">O</text>
+                <circle cx="160" cy="40" r="3" fill="#1a73e8"/>
+                <text x="40" y="56" text-anchor="middle" font-size="11" fill="#888">-3</text>
+                <text x="100" y="56" text-anchor="middle" font-size="11" fill="#888">-1</text>
+                <text x="220" y="56" text-anchor="middle" font-size="11" fill="#888">2</text>
+                <text x="280" y="56" text-anchor="middle" font-size="11" fill="#888">4</text>
+              </svg>
+            </div>
+            <div class="tip-box">物体在 t₁ 时刻位置 x₁，在 t₂ 时刻位置 x₂</div>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="icon">↔️</span>位移 Δx</div>
+            <p style="font-size:14px;line-height:1.8;color:var(--text-sub);">
+              位移是<span class="hl-key">矢量</span>，表示位置的变化：
+            </p>
+            <div class="hl-formula">Δx = x₂ - x₁</div>
+            <p style="font-size:13px;color:var(--text-sub);">
+              ▸ 大小：|Δx| 表示位置变化的多少<br>
+              ▸ 方向：从初位置指向末位置<br>
+              ▸ 单位：米（m）
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">🔗</span>承上启下</div>
+          <p style="font-size:14px;line-height:1.8;">
+            我们已经知道<b>位移</b>描述了位置变化的<span class="hl-key">多少和方向</span>，但生活中我们更关心：
+            <b>谁更快？变化有多快？</b> 这就需要引入一个新的物理量——
+            <span class="hl-blue" style="font-size:16px;">速度</span>，它描述的就是<b>位置变化的快慢</b>。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 2: 问题情景导入 ========== -->
+    <div class="slide" id="slide-2">
+      <div class="slide-title">问题情景：谁更快？</div>
+      <div class="slide-subtitle">从生活情境出发，引出"快慢"的定量描述需求</div>
+      <div class="slide-body">
+        <div class="scenario">
+          <span class="scenario-badge">情景一</span>
+          <h3>🏃 百米赛跑</h3>
+          <p>百米赛跑中，甲同学用 10 s 跑完全程，乙同学用 12.5 s 跑完全程。谁的位移变化更快？</p>
+        </div>
+        <div class="scenario" style="background:linear-gradient(135deg,#e6789e76,#5b3a8e76);">
+          <span class="scenario-badge">情景二</span>
+          <h3>🚗 汽车与自行车</h3>
+          <p>自行车在 10 s 内前进 50 m，汽车在 10 s 内前进 200 m。同样的时间内，谁的位置变化更多？谁更快？</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">🤔</span>思考与讨论</div>
+          <div style="font-size:14px;line-height:2;">
+            <p>① 比较甲乙两同学，我们用了<b>相同位移</b>比时间——时间短的更快。</p>
+            <p>② 比较汽车与自行车，我们用了<b>相同时间</b>比位移——位移大的更快。</p>
+            <p>③ 如果位移和时间都不同呢？比如甲 10 s 走 80 m，乙 8 s 走 50 m？</p>
+          </div>
+          <div class="tip-box success" style="margin-top:10px;">
+            💡 结论：需要一个<b>统一的物理量</b>来描述位置变化的快慢——将位移与时间做"比"，这就是<b>速度</b>。
+          </div>
+        </div>
+
+        <!-- 交互对比动画 -->
+        <div class="card">
+          <div class="card-title"><span class="icon">🎬</span>动态对比：谁更快？</div>
+          <div class="sim-area" style="height:130px;">
+            <div class="sim-display" id="raceDisplay">甲 8.0 m/s | 乙 6.25 m/s</div>
+            <div class="sim-track" style="height:50px;margin:30px 0 0 0;">
+              <div class="sim-object" id="raceA" style="left:0;background:#e8453c;">🏃</div>
+              <div class="sim-object" id="raceB" style="left:0;top:calc(50% + 0px);background:#1a73e8;">🚲</div>
+            </div>
+            <div class="sim-ruler" style="margin-top:12px;">
+              <div class="tick" style="left:0%;"><div class="tick-label">0m</div></div>
+              <div class="tick" style="left:25%;"><div class="tick-label">25m</div></div>
+              <div class="tick" style="left:50%;"><div class="tick-label">50m</div></div>
+              <div class="tick" style="left:75%;"><div class="tick-label">75m</div></div>
+              <div class="tick" style="left:100%;"><div class="tick-label">100m</div></div>
+            </div>
+          </div>
+          <div style="margin-top:10px;text-align:center;">
+            <button class="btn btn-accent" onclick="startRace()">▶ 开始赛跑</button>
+            <button class="btn btn-outline" onclick="resetRace()">↺ 重置</button>
+          </div>
+          <p style="font-size:13px;color:var(--text-sub);margin-top:8px;text-align:center;">
+            甲：10 s 内跑 80 m（8 m/s）｜ 乙：8 s 内跑 50 m（6.25 m/s）→ 位移与时间都不同，比"每秒走多少米"
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 3: 速度概念 ========== -->
+    <div class="slide" id="slide-3">
+      <div class="slide-title">速度的概念</div>
+      <div class="slide-subtitle">从问题情景中提炼速度的定义、公式与单位</div>
+      <div class="slide-body">
+        <div class="card">
+          <div class="card-title"><span class="icon">📐</span>速度的定义</div>
+          <p style="font-size:15px;line-height:1.8;">
+            <span class="hl-key">位移与发生这个位移所用时间的比值</span>叫做速度，符号用 <b>v</b> 表示。
+          </p>
+          <div class="hl-formula">
+            v = <span style="font-size:28px;font-weight:700;">Δx / Δt</span>
+          </div>
+          <div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap;font-size:14px;">
+            <div>▸ <b>符号</b>：v</div>
+            <div>▸ <b>单位</b>：m/s（米每秒），常用还有 km/h、cm/s</div>
+            <div>▸ <b>1 m/s = 3.6 km/h</b></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">➡️</span>速度是矢量</div>
+            <div class="arrow-flow">
+              <div class="step">位移 Δx<br><small>矢量</small></div>
+              <div class="arr">÷</div>
+              <div class="step">时间 Δt<br><small>标量</small></div>
+              <div class="arr">=</div>
+              <div class="step" style="border-color:var(--accent);color:var(--accent);">速度 v<br><small>矢量</small></div>
+            </div>
+            <p style="font-size:14px;line-height:1.8;margin-top:10px;">
+              速度的<b>方向</b>与位移方向相同，<span class="hl-key">速度的大小</span>等于物体在单位时间内位移的大小。
+            </p>
+            <div class="tip-box danger">
+              ⚠️ 易错：速度方向≠运动方向（运动方向是瞬时速度方向）
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🔄</span>单位换算交互</div>
+            <p style="font-size:14px;margin-bottom:10px;color:var(--text-sub);">拖动滑块改变 m/s 值，自动换算 km/h：</p>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+              <input type="range" id="speedSlider" min="0" max="100" value="10" step="1" style="flex:1;" oninput="convertSpeed()">
+              <span id="speedMs" style="font-size:18px;font-weight:700;color:var(--primary);">10</span>
+              <span style="font-size:14px;color:#888;">m/s</span>
+            </div>
+            <div style="text-align:center;background:#f0f4f8;border-radius:10px;padding:14px;">
+              <div style="font-size:28px;font-weight:700;color:var(--accent);" id="speedKmh">36</div>
+              <div style="font-size:13px;color:#888;">km/h</div>
+            </div>
+            <div style="margin-top:10px;font-size:13px;color:var(--text-sub);text-align:center;">
+              换算关系：1 m/s = 3.6 km/h
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);">
+          <div class="card-title"><span class="icon">🌍</span>生活中的速度</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:13px;">
+            <span class="concept-tag">步行 ≈ 1.4 m/s</span>
+            <span class="concept-tag">自行车 ≈ 5 m/s</span>
+            <span class="concept-tag">高速公路限速 120 km/h ≈ 33 m/s</span>
+            <span class="concept-tag">高铁 ≈ 100 m/s</span>
+            <span class="concept-tag">飞机巡航 ≈ 250 m/s</span>
+            <span class="concept-tag">光速 ≈ 3×10⁸ m/s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 4: 平均速度 ========== -->
+    <div class="slide" id="slide-4">
+      <div class="slide-title">平均速度</div>
+      <div class="slide-subtitle">用位移与时间之比粗略描述一段过程的快慢</div>
+      <div class="slide-body">
+        <div class="card">
+          <div class="card-title"><span class="icon">📊</span>平均速度的定义</div>
+          <p style="font-size:15px;line-height:1.8;">
+            在变速直线运动中，运动物体在某段时间内的<span class="hl-key">位移与发生这段位移所用时间的比值</span>，
+            叫做这段时间内的<span class="hl-blue">平均速度</span>。
+          </p>
+          <div class="hl-formula">v̄ = Δx / Δt</div>
+          <p style="font-size:14px;color:var(--text-sub);margin-top:8px;">
+            ▸ 平均速度只能<b>粗略</b>地描述一段时间（或一段位移）内运动的快慢<br>
+            ▸ 平均速度是<b>矢量</b>，方向与Δx方向相同<br>
+            ▸ 必须指明是哪段时间（或哪段位移）内的平均速度
+          </p>
+        </div>
+
+        <!-- 交互：平均速度计算器 -->
+        <div class="card">
+          <div class="card-title"><span class="icon">🧮</span>交互：平均速度计算器</div>
+          <p style="font-size:14px;color:var(--text-sub);margin-bottom:12px;">输入位移和时间，自动计算平均速度：</p>
+          <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+            <div>
+              <label style="font-size:13px;color:var(--text-sub);">位移 Δx (m)</label><br>
+              <input type="number" id="avgDisplacement" value="80" style="width:120px;padding:8px;border:2px solid #ddd;border-radius:6px;font-size:16px;">
+            </div>
+            <div>
+              <label style="font-size:13px;color:var(--text-sub);">时间 Δt (s)</label><br>
+              <input type="number" id="avgTime" value="10" style="width:120px;padding:8px;border:2px solid #ddd;border-radius:6px;font-size:16px;">
+            </div>
+            <button class="btn" onclick="calcAvgSpeed()">计算</button>
+          </div>
+          <div id="avgResult" style="text-align:center;background:#f0f4f8;border-radius:10px;padding:16px;font-size:20px;font-weight:700;color:var(--primary);">
+            v̄ = 80 / 10 = 8.00 m/s
+          </div>
+          <div id="avgDirection" style="text-align:center;font-size:13px;color:var(--text-sub);margin-top:6px;">
+            方向：沿位移方向（+x方向）
+          </div>
+        </div>
+
+        <!-- 物体运动模拟 -->
+        <div class="card">
+          <div class="card-title"><span class="icon">🎮</span>交互：变速运动模拟</div>
+          <div class="sim-area" style="height:120px;">
+            <div class="sim-display" id="varMotionDisplay">t=0.0s | x=0m | v̄=0m/s</div>
+            <div class="sim-track" style="height:50px;margin:30px 0 0 0;">
+              <div class="sim-object" id="varMotionObj" style="left:0;background:#e8453c;">🚗</div>
+              <div class="sim-arrow" id="varMotionArrow" style="display:none;left:45px;">➤</div>
+            </div>
+            <div class="sim-ruler" style="margin-top:12px;">
+              <div class="tick" style="left:0%;"><div class="tick-label">0m</div></div>
+              <div class="tick" style="left:25%;"><div class="tick-label">20m</div></div>
+              <div class="tick" style="left:50%;"><div class="tick-label">40m</div></div>
+              <div class="tick" style="left:75%;"><div class="tick-label">60m</div></div>
+              <div class="tick" style="left:100%;"><div class="tick-label">80m</div></div>
+            </div>
+          </div>
+          <div class="sim-controls" style="margin-top:10px;">
+            <button class="btn btn-accent" onclick="startVarMotion()">▶ 播放</button>
+            <button class="btn btn-outline" onclick="resetVarMotion()">↺ 重置</button>
+            <label>运动模式：</label>
+            <select id="motionMode" onchange="resetVarMotion()" style="padding:6px 12px;border:2px solid #ddd;border-radius:6px;font-size:14px;">
+              <option value="accelerate">加速运动（越来越快）</option>
+              <option value="decelerate">减速运动（越来越慢）</option>
+              <option value="uniform">匀速运动</option>
+            </select>
+          </div>
+          <p style="font-size:13px;color:var(--text-sub);margin-top:8px;">
+            💡 观察：加速/减速运动中，物体在不同时刻"瞬时的快慢"不同，但整段过程的平均速度可以用 v̄ = Δx/Δt 统一描述。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 5: 瞬时速度 ========== -->
+    <div class="slide" id="slide-5">
+      <div class="slide-title">瞬时速度</div>
+      <div class="slide-subtitle">用极限思想精确描述某一时刻的快慢——本节的核心难点</div>
+      <div class="slide-body">
+        <div class="card">
+          <div class="card-title"><span class="icon">⚡</span>瞬时速度的定义</div>
+          <p style="font-size:15px;line-height:1.8;">
+            运动物体在<b>某一时刻</b>（或某一位置）的速度叫做<span class="hl-key">瞬时速度</span>。
+            当 Δt 非常非常小时，这段时间内的平均速度就可近似为该时刻的瞬时速度。
+          </p>
+          <div class="hl-formula" style="font-size:18px;">
+            v = <span style="font-size:24px;font-weight:700;">lim</span><sub>Δt→0</sub> (Δx/Δt)
+          </div>
+        </div>
+
+        <!-- 极限过程交互动画 -->
+        <div class="card">
+          <div class="card-title"><span class="icon">🔬</span>交互：极限思想——Δt 越小越精确</div>
+          <p style="font-size:14px;color:var(--text-sub);margin-bottom:12px;">
+            拖动滑块缩小时间间隔 Δt，观察平均速度如何趋近瞬时速度：
+          </p>
+          <div class="sim-area">
+            <div class="sim-display" id="limitDisplay">Δt=2.00s → v̄=13.00 m/s</div>
+            <div class="sim-track" style="height:60px;margin:30px 10px;">
+              <div class="sim-object" id="limitObj" style="left:30%;background:#e8453c;">🚗</div>
+              <div style="position:absolute;left:30%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.3);"></div>
+              <div id="limitWindow" style="position:absolute;top:5px;bottom:5px;background:rgba(232,69,60,.15);border:1px dashed rgba(255,255,255,.3);border-radius:4px;"></div>
+            </div>
+            <div class="sim-controls" style="justify-content:center;margin-top:20px;">
+              <label>时间间隔 Δt</label>
+              <input type="range" id="dtSlider" min="1" max="50" value="50" step="1" style="width:200px;" oninput="updateLimit()">
+              <span id="dtValue" style="color:#fff;font-family:monospace;">2.00 s</span>
+            </div>
+            <div style="text-align:center;margin-top:14px;">
+              <span style="font-size:14px;color:rgba(255,255,255,.7);">瞬时速度 v ≈ </span>
+              <span id="limitSpeed" style="font-size:24px;font-weight:700;color:#0f0;font-family:monospace;">13.00 m/s</span>
+              <span style="font-size:14px;color:rgba(255,255,255,.7);">（真实值 12.00 m/s）</span>
+            </div>
+          </div>
+          <div class="tip-box success" style="margin-top:10px;">
+            ✅ 当 Δt → 0 时，平均速度的极限就是瞬时速度。这就是<b>极限思想</b>在物理学中的应用！
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">📱</span>瞬时速度的测量</div>
+            <p style="font-size:14px;line-height:1.8;">
+              ▸ <b>打点计时器</b>：在纸带上每隔 0.02 s 打一个点，测量极短时间内的位移<br>
+              ▸ <b>光电门</b>：物体经过极窄光电门的时间极短，可近似为瞬时速度<br>
+              ▸ <b>速度计/手机GPS</b>：直接显示瞬时速度（速率）
+            </p>
+          </div>
+          <div class="card">
+            <div class="card-title"><span class="icon">💡</span>关键理解</div>
+            <p style="font-size:14px;line-height:1.8;">
+              ▸ 瞬时速度是<b>矢量</b>，有大小和方向<br>
+              ▸ 瞬时速度描述的是<b>某一时刻</b>的运动快慢和方向<br>
+              ▸ 匀速运动中：瞬时速度 = 平均速度（恒定不变）
+            </p>
+            <div class="tip-box">
+              💡 平均速度是"一段过程"的描述，瞬时速度是"一个时刻"的描述
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 6: 速率 ========== -->
+    <div class="slide" id="slide-6">
+      <div class="slide-title">速率</div>
+      <div class="slide-subtitle">速度的大小——一个标量</div>
+      <div class="slide-body">
+        <div class="card">
+          <div class="card-title"><span class="icon">🎯</span>速率的定义</div>
+          <p style="font-size:15px;line-height:1.8;">
+            <span class="hl-key">瞬时速度的大小</span>叫做<span class="hl-blue">速率</span>，它是一个<b>标量</b>，只有大小没有方向。
+          </p>
+          <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin:16px 0;">
+            <div style="text-align:center;background:#e8f0fe;border-radius:12px;padding:16px 24px;">
+              <div style="font-size:28px;font-weight:700;color:var(--primary);">v</div>
+              <div style="font-size:13px;color:#555;">瞬时速度</div>
+              <div style="font-size:12px;color:#888;">矢量</div>
+            </div>
+            <div style="font-size:28px;color:#888;">⟹</div>
+            <div style="text-align:center;background:#fff3e0;border-radius:12px;padding:16px 24px;">
+              <div style="font-size:28px;font-weight:700;color:var(--warn);">|v|</div>
+              <div style="font-size:13px;color:#555;">速率</div>
+              <div style="font-size:12px;color:#888;">标量</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">🚗</span>汽车速度计上的数字</div>
+          <div style="display:flex;gap:20px;align-items:center;">
+            <div style="flex:1;">
+              <svg width="100%" height="120" viewBox="0 0 200 120">
+                <!-- 速度表盘 -->
+                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#ddd" stroke-width="8"/>
+                <path d="M 20 100 A 80 80 0 0 1 140 35" fill="none" stroke="#2ecc71" stroke-width="8"/>
+                <path d="M 140 35 A 80 80 0 0 1 160 40" fill="none" stroke="#f39c12" stroke-width="8"/>
+                <path d="M 160 40 A 80 80 0 0 1 180 100" fill="none" stroke="#e74c3c" stroke-width="8"/>
+                <text x="22" y="115" font-size="9" fill="#888">0</text>
+                <text x="100" y="28" font-size="9" fill="#888" text-anchor="middle">60</text>
+                <text x="178" y="115" font-size="9" fill="#888">120</text>
+                <!-- 指针 -->
+                <line x1="100" y1="100" x2="135" y2="45" stroke="#333" stroke-width="3" stroke-linecap="round" id="speedometerNeedle" style="transform-origin:100px 100px;transition:transform .5s;"/>
+                <circle cx="100" cy="100" r="5" fill="#333"/>
+                <text x="100" y="85" font-size="16" fill="#333" text-anchor="middle" font-weight="bold" id="speedometerValue">60</text>
+                <text x="100" y="98" font-size="8" fill="#888" text-anchor="middle">km/h</text>
+              </svg>
+            </div>
+            <div style="flex:1;">
+              <p style="font-size:14px;line-height:1.8;">
+                汽车速度计显示的是<b>速率</b>（瞬时速度的大小），<span class="hl-key">不包含方向信息</span>。
+              </p>
+              <div style="margin-top:10px;">
+                <button class="btn" onclick="changeSpeedometer()">切换速度</button>
+              </div>
+              <div class="tip-box" style="margin-top:8px;">
+                💡 日常说的"速度"常常指"速率"，但在物理学中速度是矢量，速率是标量，不能混用！
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 7: 重难点突破 ========== -->
+    <div class="slide" id="slide-7">
+      <div class="slide-title">重难点突破：易混淆概念辨析</div>
+      <div class="slide-subtitle">平均速度 vs 平均速率 vs 瞬时速度 vs 速率</div>
+      <div class="slide-body">
+        <div class="card">
+          <div class="card-title"><span class="icon">📋</span>四大概念对比表</div>
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th style="width:14%;">概念</th>
+                <th style="width:10%;">类型</th>
+                <th style="width:24%;">定义</th>
+                <th style="width:18%;">公式</th>
+                <th style="width:14%;">方向</th>
+                <th>物理意义</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>平均速度</td>
+                <td>矢量</td>
+                <td>位移与时间之比</td>
+                <td>v̄ = Δx/Δt</td>
+                <td>沿Δx方向</td>
+                <td>粗略描述一段时间内的快慢和方向</td>
+              </tr>
+              <tr>
+                <td>瞬时速度</td>
+                <td>矢量</td>
+                <td>Δt→0 时平均速度的极限</td>
+                <td>v = lim(Δx/Δt)</td>
+                <td>该时刻运动方向</td>
+                <td>精确描述某一时刻的快慢和方向</td>
+              </tr>
+              <tr>
+                <td>平均速率</td>
+                <td>标量</td>
+                <td>路程与时间之比</td>
+                <td>v̄_rate = s/Δt</td>
+                <td>无方向</td>
+                <td>粗略描述一段时间内的快慢</td>
+              </tr>
+              <tr>
+                <td>速率</td>
+                <td>标量</td>
+                <td>瞬时速度的大小</td>
+                <td>|v|</td>
+                <td>无方向</td>
+                <td>精确描述某一时刻的快慢</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="two-col">
+          <div class="card" style="border-left:4px solid var(--danger);">
+            <div class="card-title" style="color:var(--danger);"><span class="icon">⚠️</span>易错点1：平均速度≠平均速率</div>
+            <p style="font-size:14px;line-height:1.8;">
+              <b>平均速度</b> = <span class="hl-blue">位移</span> / 时间（矢量）<br>
+              <b>平均速率</b> = <span class="hl-key">路程</span> / 时间（标量）<br><br>
+              只有在<b>单向直线运动</b>中，位移大小=路程，两者数值才相等。
+            </p>
+            <div class="tip-box danger">
+              ❌ 物体绕操场跑一圈，位移=0，平均速度=0，但路程=400m，平均速率≠0！
+            </div>
+          </div>
+          <div class="card" style="border-left:4px solid var(--warn);">
+            <div class="card-title" style="color:var(--warn);"><span class="icon">⚠️</span>易错点2：速度的矢量性</div>
+            <p style="font-size:14px;line-height:1.8;">
+              速度是<b>矢量</b>，比较两个速度是否相同，必须同时比较<b>大小和方向</b>。<br><br>
+              ▸ 大小相等、方向不同 → 速度不同<br>
+              ▸ 方向相同、大小不等 → 速度不同<br>
+              ▸ 大小相等且方向相同 → 速度相同
+            </p>
+            <div class="tip-box">
+              💡 说"速度为 5 m/s"必须同时指明方向！
+            </div>
+          </div>
+        </div>
+
+        <!-- 交互判断 -->
+        <div class="card">
+          <div class="card-title"><span class="icon">✅</span>快速判断</div>
+          <p style="font-size:14px;color:var(--text-sub);margin-bottom:10px;">点击下方判断是否正确，即时反馈：</p>
+          <div class="quiz-opts">
+            <div class="quiz-opt" onclick="quickJudge(this,false)">① 平均速度的大小就是平均速率</div>
+            <div class="quiz-opt" onclick="quickJudge(this,true)">② 瞬时速度的大小就是速率</div>
+            <div class="quiz-opt" onclick="quickJudge(this,false)">③ 平均速度的方向就是运动方向</div>
+            <div class="quiz-opt" onclick="quickJudge(this,true)">④ 汽车速度计显示的是速率</div>
+          </div>
+          <div class="quiz-feedback" id="quickFeedback"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 8: v-t 图像 ========== -->
+    <div class="slide" id="slide-8">
+      <div class="slide-title">速度—时间图像（v-t 图）</div>
+      <div class="slide-subtitle">用图像直观展示速度随时间的变化关系</div>
+      <div class="slide-body">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">📈</span>v-t 图的意义</div>
+            <p style="font-size:14px;line-height:1.8;">
+              以时间 <b>t</b> 为横轴、速度 <b>v</b> 为纵轴，描绘速度随时间变化关系的图像。
+            </p>
+            <ul style="font-size:14px;line-height:2;margin-top:8px;padding-left:18px;">
+              <li><b>匀速运动</b>：平行于 t 轴的水平线</li>
+              <li><b>加速运动</b>：斜向上倾斜的直线/曲线</li>
+              <li><b>减速运动</b>：斜向下倾斜的直线/曲线</li>
+              <li>图线在 t 轴上方 → 正方向运动</li>
+              <li>图线在 t 轴下方 → 反方向运动</li>
+            </ul>
+            <div class="tip-box">
+              💡 v-t 图中图线与时间轴所围"面积"在数值上等于这段时间内的<b>位移</b>大小！（下节课将深入讲解）
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">🎨</span>交互：v-t 图绘制</div>
+            <p style="font-size:14px;color:var(--text-sub);margin-bottom:10px;">选择运动类型，实时查看 v-t 图：</p>
+            <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+              <button class="btn btn-outline" onclick="drawVT('uniform')" id="vtBtn1">匀速</button>
+              <button class="btn btn-outline" onclick="drawVT('accel')" id="vtBtn2">加速</button>
+              <button class="btn btn-outline" onclick="drawVT('decel')" id="vtBtn3">减速</button>
+            </div>
+            <svg id="vtChart" width="100%" height="220" viewBox="0 0 300 220">
+              <!-- 坐标轴 -->
+              <line x1="40" y1="10" x2="40" y2="190" stroke="#333" stroke-width="1.5"/>
+              <line x1="40" y1="190" x2="290" y2="190" stroke="#333" stroke-width="1.5"/>
+              <polygon points="40,10 36,18 44,18" fill="#333"/>
+              <polygon points="290,190 282,186 282,194" fill="#333"/>
+              <text x="28" y="14" font-size="11" fill="#333">v/m·s⁻¹</text>
+              <text x="278" y="208" font-size="11" fill="#333">t/s</text>
+              <text x="32" y="195" font-size="9" fill="#888">O</text>
+              <!-- 网格 -->
+              <line x1="40" y1="100" x2="290" y2="100" stroke="#eee" stroke-width="1" stroke-dasharray="2,3"/>
+              <line x1="165" y1="10" x2="165" y2="190" stroke="#eee" stroke-width="1" stroke-dasharray="2,3"/>
+              <!-- 图线占位 -->
+              <path id="vtPath" d="" fill="none" stroke="#e8453c" stroke-width="2.5"/>
+              <path id="vtArea" d="" fill="rgba(232,69,60,.1)" stroke="none"/>
+              <text id="vtLabel" x="150" y="105" font-size="13" fill="#888" text-anchor="middle">请选择运动类型</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 9: 打点计时器实验 ========== -->
+    <div class="slide" id="slide-9">
+      <div class="slide-title">实验：用打点计时器测速度</div>
+      <div class="slide-subtitle">电磁打点计时器的工作原理与纸带分析——本节实验重点</div>
+      <div class="slide-body">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">🔧</span>电磁打点计时器</div>
+            <ul style="font-size:14px;line-height:2;padding-left:18px;">
+              <li><b>电源</b>：交流电源，工作电压 ≤ 8 V</li>
+              <li><b>打点周期</b>：T = 0.02 s（频率 50 Hz）</li>
+              <li><b>原理</b>：线圈通交流电→电磁铁周期性吸合/释放振片→振针打点</li>
+              <li><b>作用</b>：在纸带上记录相等时间间隔的位置</li>
+            </ul>
+            <div style="text-align:center;margin:14px 0;">
+              <svg width="100%" height="100" viewBox="0 0 280 100">
+                <!-- 计时器 -->
+                <rect x="60" y="15" width="80" height="40" rx="5" fill="#34495e"/>
+                <rect x="70" y="20" width="60" height="20" rx="3" fill="#ecf0f1"/>
+                <text x="100" y="34" font-size="9" fill="#333" text-anchor="middle">打点计时器</text>
+                <rect x="95" y="55" width="10" height="15" fill="#7f8c8d"/>
+                <rect x="97" y="68" width="2" height="6" fill="#e74c3c"/>
+                <!-- 纸带 -->
+                <rect x="0" y="74" width="280" height="14" fill="#f5e6c8" stroke="#d4c4a0" stroke-width="1"/>
+                <!-- 打的点 -->
+                <circle cx="60" cy="81" r="2.5" fill="#333"/>
+                <circle cx="90" cy="81" r="2.5" fill="#333"/>
+                <circle cx="120" cy="81" r="2.5" fill="#333"/>
+                <circle cx="155" cy="81" r="2.5" fill="#333"/>
+                <circle cx="195" cy="81" r="2.5" fill="#333"/>
+                <circle cx="240" cy="81" r="2.5" fill="#333"/>
+                <!-- 连线到电源 -->
+                <line x1="100" y1="15" x2="100" y2="5" stroke="#e74c3c" stroke-width="1.5"/>
+                <line x1="100" y1="5" x2="180" y2="5" stroke="#e74c3c" stroke-width="1.5"/>
+                <line x1="180" y1="5" x2="180" y2="15" stroke="#e74c3c" stroke-width="1.5"/>
+                <rect x="170" y="15" width="20" height="15" rx="2" fill="#2ecc71"/>
+                <text x="180" y="26" font-size="7" fill="#fff" text-anchor="middle">~</text>
+                <text x="180" y="10" font-size="7" fill="#e74c3c" text-anchor="middle">8V AC</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><span class="icon">📝</span>实验步骤要点</div>
+            <ol style="font-size:13px;line-height:1.9;padding-left:18px;">
+              <li>固定打点计时器，连接交流电源</li>
+              <li>将纸带穿过限位孔，一端连接小车</li>
+              <li><b>先接通电源，后释放小车</b>（⚠️ 顺序不能反！）</li>
+              <li>小车拖动纸带运动，纸带上打下一系列点</li>
+              <li>断开电源，取下纸带分析</li>
+            </ol>
+            <div class="tip-box danger">
+              ⚠️ 必须先接通电源再释放小车，否则纸带前期没有打点，浪费纸带！
+            </div>
+          </div>
+        </div>
+
+        <!-- 交互：打点计时器模拟 -->
+        <div class="card">
+          <div class="card-title"><span class="icon">🎬</span>交互模拟：纸带打点</div>
+          <p style="font-size:14px;color:var(--text-sub);margin-bottom:10px;">
+            点击"开始打点"，观察小车拖动纸带运动并打点。每两个相邻点之间时间间隔为 0.02 s，可"选取计数点"计算速度：
+          </p>
+          <div class="tape-sim">
+            <div class="sim-display" id="tapeDisplay">点击"开始打点"启动实验</div>
+            <div class="tape-area" id="tapeArea">
+              <div class="tape-line"></div>
+              <div class="tape-cart" id="tapeCart" style="left:20px;">🚗</div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+              <button class="btn btn-accent" onclick="startTape()">▶ 开始打点</button>
+              <button class="btn btn-outline" onclick="resetTape()">↺ 重置</button>
+              <button class="btn" onclick="analyzeTape()">📐 分析纸带</button>
+            </div>
+            <div id="tapeAnalysis" style="display:none;margin-top:14px;background:rgba(255,255,255,.95);border-radius:8px;padding:14px;">
+              <h4 style="font-size:15px;color:#333;margin-bottom:8px;">📐 纸带分析结果</h4>
+              <div id="tapeResult" style="font-size:14px;line-height:1.8;color:#333;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 10: 课堂练习 ========== -->
+    <div class="slide" id="slide-10">
+      <div class="slide-title">课堂练习</div>
+      <div class="slide-subtitle">即时反馈，巩固理解</div>
+      <div class="slide-body">
+        <div class="quiz-question">
+          <div class="quiz-q">1. 关于速度，下列说法正确的是（  ）</div>
+          <div class="quiz-opts" data-q="1">
+            <div class="quiz-opt" onclick="checkQuiz(this,1,false)">A. 速度是描述物体位置变化的物理量</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,1,true)">B. 速度是描述位置变化快慢的物理量</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,1,false)">C. 速度越大，位移越大</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,1,false)">D. 速度方向就是物体运动的方向</div>
+          </div>
+          <div class="quiz-feedback" id="quizFb-1"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-q">2. 某人骑自行车沿直线运动，前一半位移平均速度为 4 m/s，后一半位移平均速度为 6 m/s，全程的平均速度为（  ）</div>
+          <div class="quiz-opts" data-q="2">
+            <div class="quiz-opt" onclick="checkQuiz(this,2,false)">A. 5 m/s</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,2,true)">B. 4.8 m/s</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,2,false)">C. 10 m/s</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,2,false)">D. 2 m/s</div>
+          </div>
+          <div class="quiz-feedback" id="quizFb-2"></div>
+        </div>
+
+        <div class="quiz-question">
+          <div class="quiz-q">3. 关于瞬时速度和平均速度，下列说法正确的是（  ）</div>
+          <div class="quiz-opts" data-q="3">
+            <div class="quiz-opt" onclick="checkQuiz(this,3,false)">A. 平均速度就是初、末速度的平均值</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,3,true)">B. 当 Δt→0 时，平均速度趋近于瞬时速度</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,3,false)">C. 平均速度一定小于瞬时速度</div>
+            <div class="quiz-opt" onclick="checkQuiz(this,3,false)">D. 匀速运动中各时刻瞬时速度不相等</div>
+          </div>
+          <div class="quiz-feedback" id="quizFb-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Slide 11: 知识总结与前瞻 ========== -->
+    <div class="slide" id="slide-11">
+      <div class="slide-title">课堂总结与知识前瞻</div>
+      <div class="slide-subtitle">梳理本节知识脉络，为下节"加速度"埋下伏笔</div>
+      <div class="slide-body">
+        <div class="card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);">
+          <div class="card-title"><span class="icon">📋</span>本节知识脉络</div>
+          <div class="arrow-flow" style="flex-wrap:wrap;justify-content:center;">
+            <div class="step" style="border-color:#4caf50;">位置/位移<br><small>基础</small></div>
+            <div class="arr">→</div>
+            <div class="step" style="border-color:#1a73e8;">速度 v=Δx/Δt<br><small>定义</small></div>
+            <div class="arr">→</div>
+            <div class="step" style="border-color:#1a73e8;">平均速度<br><small>粗略描述</small></div>
+            <div class="arr">→</div>
+            <div class="step" style="border-color:#e8453c;">瞬时速度<br><small>精确描述</small></div>
+            <div class="arr">→</div>
+            <div class="step" style="border-color:#f39c12;">速率 |v|<br><small>标量</small></div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><span class="icon">✅</span>本节核心要点</div>
+            <ul style="font-size:14px;line-height:2;padding-left:18px;">
+              <li>速度 = 位移/时间，是<b>矢量</b></li>
+              <li>平均速度粗略描述一段过程</li>
+              <li>瞬时速度精确描述某一时刻（极限思想）</li>
+              <li>速率 = 瞬时速度的大小，是<b>标量</b></li>
+              <li>平均速度 ≠ 平均速率（位移 vs 路程）</li>
+              <li>v-t 图直观展示速度变化</li>
+              <li>打点计时器是测量速度的重要工具</li>
+            </ul>
+          </div>
+
+          <div class="card" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:2px dashed var(--warn);">
+            <div class="card-title" style="color:var(--warn);"><span class="icon">🔮</span>下节预告：加速度</div>
+            <p style="font-size:14px;line-height:1.8;">
+              本节课我们学会了用速度描述<b>位置变化的快慢</b>。
+              <br><br>
+              但如果两辆车的速度都是 <b>20 m/s</b>，一辆正在加速、一辆正在减速，
+              它们的速度变化一样快吗？
+              <br><br>
+              要描述<span class="hl-key">速度变化的快慢</span>，就需要引入下一个物理量——
+              <span class="hl-blue" style="font-size:18px;">加速度 a</span>
+            </p>
+            <div class="tip-box" style="background:#fff8e1;">
+              📌 思考题：v-t 图中直线的"倾斜程度"代表什么物理意义？
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="text-align:center;background:linear-gradient(135deg,#1a2a6c,#fdbb2d);color:#fff;">
+          <h3 style="font-size:20px;margin-bottom:6px;">🎯 课后作业</h3>
+          <p style="font-size:14px;opacity:.9;">1. 完成课本 P25 练习 1-4 题</p>
+          <p style="font-size:14px;opacity:.9;">2. 思考：v-t 图中图线的倾斜程度与速度变化有什么关系？</p>
+          <p style="font-size:14px;opacity:.9;">3. 预习第四节"速度变化快慢的描述——加速度"</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /slide-container -->
+
+  <!-- 页码圆点 -->
+  <div class="page-dots" id="pageDots"></div>
+</div>
+
+<script>
+// ============ 全局状态 ============
+var currentSlide = 0;
+var totalSlides = 12;
+
+// ============ 幻灯片导航 ============
+function goSlide(dir){
+  var next = currentSlide + dir;
+  if(next < 0 || next >= totalSlides) return;
+  document.getElementById('slide-' + currentSlide).classList.remove('active');
+  currentSlide = next;
+  document.getElementById('slide-' + currentSlide).classList.add('active');
+  updateNav();
+  // 触发对应slide的初始化
+  initSlide(currentSlide);
+}
+
+function jumpTo(idx){
+  if(idx < 0 || idx >= totalSlides) return;
+  document.getElementById('slide-' + currentSlide).classList.remove('active');
+  currentSlide = idx;
+  document.getElementById('slide-' + currentSlide).classList.add('active');
+  updateNav();
+  initSlide(currentSlide);
+}
+
+function updateNav(){
+  document.getElementById('navProgress').textContent = (currentSlide + 1) + ' / ' + totalSlides;
+  document.getElementById('btnPrev').disabled = (currentSlide === 0);
+  document.getElementById('btnNext').disabled = (currentSlide === totalSlides - 1);
+  var dots = document.querySelectorAll('.page-dot');
+  for(var i = 0; i < dots.length; i++){
+    dots[i].classList.toggle('active', i === currentSlide);
+  }
+}
+
+// 生成页码圆点
+(function(){
+  var container = document.getElementById('pageDots');
+  for(var i = 0; i < totalSlides; i++){
+    var dot = document.createElement('div');
+    dot.className = 'page-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = (function(idx){ return function(){ jumpTo(idx); }; })(i);
+    container.appendChild(dot);
+  }
+})();
+
+// 键盘导航
+document.addEventListener('keydown', function(e){
+  if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') goSlide(-1);
+  if(e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); goSlide(1); }
+});
+
+// ============ 各 slide 初始化 ============
+function initSlide(idx){
+  switch(idx){
+    case 3: convertSpeed(); break;
+    case 5: updateLimit(); break;
+    case 8: drawVT('uniform'); break;
+  }
+}
+
+// ============ Slide 2: 赛跑动画 ============
+var raceTimer = null;
+var raceT = 0;
+function startRace(){
+  if(raceTimer) return;
+  raceT = 0;
+  var trackW = document.querySelector('#slide-2 .sim-track').offsetWidth;
+  raceTimer = setInterval(function(){
+    raceT += 0.05;
+    // 按比例映射到轨道：甲10s跑80m(8m/s)，乙8s跑50m(6.25m/s)
+    var pA = Math.min((raceT * 8) / 80, 1) * (trackW - 40);
+    var pB = Math.min((raceT * 6.25) / 50, 1) * (trackW - 40);
+    document.getElementById('raceA').style.left = pA + 'px';
+    document.getElementById('raceB').style.left = pB + 'px';
+    document.getElementById('raceDisplay').textContent =
+      't=' + raceT.toFixed(1) + 's | 甲已跑' + (raceT*8).toFixed(1) + 'm | 乙已跑' + (raceT*6.25).toFixed(1) + 'm';
+    if(pA >= trackW - 40 || raceT > 12){
+      clearInterval(raceTimer); raceTimer = null;
+    }
+  }, 50);
+}
+function resetRace(){
+  if(raceTimer){ clearInterval(raceTimer); raceTimer = null; }
+  document.getElementById('raceA').style.left = '0px';
+  document.getElementById('raceB').style.left = '0px';
+  document.getElementById('raceDisplay').textContent = '甲 8.0 m/s | 乙 6.25 m/s';
+  raceT = 0;
+}
+
+// ============ Slide 3: 单位换算 ============
+function convertSpeed(){
+  var ms = parseInt(document.getElementById('speedSlider').value);
+  var kmh = (ms * 3.6).toFixed(1);
+  document.getElementById('speedMs').textContent = ms;
+  document.getElementById('speedKmh').textContent = kmh;
+}
+
+// ============ Slide 4: 平均速度计算器 ============
+function calcAvgSpeed(){
+  var dx = parseFloat(document.getElementById('avgDisplacement').value) || 0;
+  var dt = parseFloat(document.getElementById('avgTime').value) || 1;
+  var v = (dx / dt).toFixed(2);
+  document.getElementById('avgResult').innerHTML = 'v̄ = ' + dx + ' / ' + dt + ' = <span style="color:var(--accent);">' + v + '</span> m/s';
+  var dir = dx >= 0 ? '+x 方向（正向）' : '-x 方向（反向）';
+  document.getElementById('avgDirection').textContent = '方向：沿位移方向（' + dir + '）';
+}
+
+// ============ Slide 4: 变速运动模拟 ============
+var varMotionTimer = null;
+var varMotionT = 0;
+function startVarMotion(){
+  if(varMotionTimer) return;
+  varMotionT = 0;
+  var mode = document.getElementById('motionMode').value;
+  var trackW = document.querySelector('#slide-4 .sim-track').offsetWidth - 40;
+  varMotionTimer = setInterval(function(){
+    varMotionT += 0.05;
+    var x;
+    if(mode === 'accelerate'){
+      // 加速：x = 0.5*a*t², a=1.6, 总时间10s, 总位移80m
+      x = 0.5 * 1.6 * varMotionT * varMotionT;
+    } else if(mode === 'decelerate'){
+      // 减速：x = v0*t - 0.5*a*t², v0=16, a=1.6
+      x = 16 * varMotionT - 0.5 * 1.6 * varMotionT * varMotionT;
+      if(x < 0) x = 0;
+    } else {
+      // 匀速
+      x = 8 * varMotionT;
+    }
+    var progress = Math.min(x / 80, 1);
+    var pos = progress * trackW;
+    document.getElementById('varMotionObj').style.left = pos + 'px';
+    var avgV = varMotionT > 0 ? (x / varMotionT).toFixed(2) : '0.00';
+    document.getElementById('varMotionDisplay').textContent =
+      't=' + varMotionT.toFixed(1) + 's | x=' + x.toFixed(1) + 'm | v̄=' + avgV + 'm/s';
+    if(varMotionT >= 10 || progress >= 1){
+      clearInterval(varMotionTimer); varMotionTimer = null;
+    }
+  }, 50);
+}
+function resetVarMotion(){
+  if(varMotionTimer){ clearInterval(varMotionTimer); varMotionTimer = null; }
+  varMotionT = 0;
+  document.getElementById('varMotionObj').style.left = '0px';
+  document.getElementById('varMotionDisplay').textContent = 't=0.0s | x=0m | v̄=0m/s';
+}
+
+// ============ Slide 5: 极限思想 ============
+function updateLimit(){
+  var sliderVal = parseInt(document.getElementById('dtSlider').value);
+  // sliderVal: 50=最大(2.0s), 1=最小(0.02s)
+  var dt = 0.02 + (sliderVal - 1) / 49 * 1.98; // 0.02~2.0s
+  // 使用三次函数 x=t³（变加速运动），在 t=2s 处瞬时速度 v=3t²=12 m/s
+  // 平均速度 v̄=[(2+Δt/2)³-(2-Δt/2)³]/Δt = 12+Δt²/4
+  // Δt=2时 v̄=13，Δt→0时 v̄→12，体现极限收敛
+  var tMid = 2.0;
+  var x1 = Math.pow(tMid - dt/2, 3);
+  var x2 = Math.pow(tMid + dt/2, 3);
+  var dx = x2 - x1;
+  var avgV = (dx / dt);
+  var trueV = 12.0;
+  var error = Math.abs(avgV - trueV);
+
+  document.getElementById('dtValue').textContent = dt.toFixed(2) + ' s';
+  document.getElementById('limitDisplay').textContent =
+    'Δt=' + dt.toFixed(2) + 's → v̄=' + avgV.toFixed(2) + ' m/s';
+
+  // 更新窗口可视化
+  var trackW = document.querySelector('#slide-5 .sim-track').offsetWidth || 300;
+  var centerPct = 35; // 物体位置百分比
+  var halfWindowPct = (dt / 4) * 15; // 窗口宽度随dt变化
+  halfWindowPct = Math.min(halfWindowPct, 30);
+  var windowEl = document.getElementById('limitWindow');
+  if(halfWindowPct > 2){
+    windowEl.style.display = 'block';
+    windowEl.style.left = (centerPct - halfWindowPct) + '%';
+    windowEl.style.width = (halfWindowPct * 2) + '%';
+  } else {
+    windowEl.style.display = 'none';
+  }
+
+  var speedEl = document.getElementById('limitSpeed');
+  speedEl.textContent = avgV.toFixed(2) + ' m/s';
+  // 误差越小颜色越接近绿色
+  if(error < 0.1){
+    speedEl.style.color = '#0f0';
+  } else if(error < 0.5){
+    speedEl.style.color = '#ff0';
+  } else {
+    speedEl.style.color = '#f80';
+  }
+}
+
+// ============ Slide 6: 速度计 ============
+var speedometerIdx = 0;
+var speedometerValues = [0, 30, 60, 90, 120];
+function changeSpeedometer(){
+  speedometerIdx = (speedometerIdx + 1) % speedometerValues.length;
+  var v = speedometerValues[speedometerIdx];
+  // 映射 0-120 到角度 -90°到+90°
+  var angle = -90 + (v / 120) * 180;
+  var needle = document.getElementById('speedometerNeedle');
+  needle.style.transform = 'rotate(' + angle + 'deg)';
+  document.getElementById('speedometerValue').textContent = v;
+}
+
+// ============ Slide 7: 快速判断 ============
+function quickJudge(el, isCorrect){
+  // isCorrect 表示该说法是否正确
+  // 这里逻辑：用户点击选项，如果选项对应的"该说法是否正确"为true，说明选了正确的说法
+  // 但我们的设计是：①错误(点击应标红) ②正确(点击应标绿) ③错误 ④正确
+  // 所以 isCorrect 参数 = 该说法的正确性
+  var fb = document.getElementById('quickFeedback');
+  // 重置所有选项
+  var opts = el.parentNode.querySelectorAll('.quiz-opt');
+  for(var i = 0; i < opts.length; i++){
+    opts[i].classList.remove('correct', 'wrong');
+  }
+  if(isCorrect){
+    el.classList.add('correct');
+    fb.className = 'quiz-feedback show right';
+    fb.innerHTML = '✅ 这个说法是<b>正确</b>的！';
+  } else {
+    el.classList.add('wrong');
+    for(var j = 0; j < opts.length; j++){
+      var oc = opts[j].getAttribute('onclick') || '';
+      if(oc.indexOf('true') > -1){ opts[j].classList.add('correct'); }
+    }
+    fb.className = 'quiz-feedback show miss';
+    fb.innerHTML = '❌ 这个说法是<b>错误</b>的！绿色高亮的选项才是正确的说法。';
+  }
+}
+
+// ============ Slide 8: v-t 图绘制 ============
+function drawVT(type){
+  var path = document.getElementById('vtPath');
+  var area = document.getElementById('vtArea');
+  var label = document.getElementById('vtLabel');
+  var btns = ['vtBtn1','vtBtn2','vtBtn3'];
+  for(var i = 0; i < btns.length; i++){
+    document.getElementById(btns[i]).style.fontWeight = 'normal';
+    document.getElementById(btns[i]).style.background = 'transparent';
+  }
+
+  // 坐标系：x=40(0s)到x=290(5s), y轴: y=190(0)到y=10(10m/s)
+  // 比例: x方向 50px/s, y方向 18px/(m/s)
+  var x0 = 40, y0 = 190, xScale = 50, yScale = 18;
+  var d, areaD;
+
+  if(type === 'uniform'){
+    // 匀速: v=4m/s 水平线
+    var y = y0 - 4 * yScale;
+    d = 'M ' + x0 + ' ' + y + ' L ' + (x0 + 5*xScale) + ' ' + y;
+    areaD = 'M ' + x0 + ' ' + y0 + ' L ' + x0 + ' ' + y + ' L ' + (x0 + 5*xScale) + ' ' + y + ' L ' + (x0 + 5*xScale) + ' ' + y0 + ' Z';
+    document.getElementById('vtBtn1').style.fontWeight = 'bold';
+    document.getElementById('vtBtn1').style.background = '#e8f0fe';
+    label.textContent = '匀速运动 v = 4 m/s（水平线）';
+    label.setAttribute('y', y - 8);
+  } else if(type === 'accel'){
+    // 加速: v=2t, 从0到10m/s
+    d = 'M ' + x0 + ' ' + y0 + ' L ' + (x0 + 5*xScale) + ' ' + (y0 - 10*yScale);
+    areaD = 'M ' + x0 + ' ' + y0 + ' L ' + (x0 + 5*xScale) + ' ' + (y0 - 10*yScale) + ' L ' + (x0 + 5*xScale) + ' ' + y0 + ' Z';
+    document.getElementById('vtBtn2').style.fontWeight = 'bold';
+    document.getElementById('vtBtn2').style.background = '#e8f0fe';
+    label.textContent = '加速运动（斜向上直线）';
+    label.setAttribute('y', 100);
+  } else if(type === 'decel'){
+    // 减速: v=10-2t, 从10到0
+    d = 'M ' + x0 + ' ' + (y0 - 10*yScale) + ' L ' + (x0 + 5*xScale) + ' ' + y0;
+    areaD = 'M ' + x0 + ' ' + y0 + ' L ' + x0 + ' ' + (y0 - 10*yScale) + ' L ' + (x0 + 5*xScale) + ' ' + y0 + ' Z';
+    document.getElementById('vtBtn3').style.fontWeight = 'bold';
+    document.getElementById('vtBtn3').style.background = '#e8f0fe';
+    label.textContent = '减速运动（斜向下直线）';
+    label.setAttribute('y', 100);
+  }
+  path.setAttribute('d', d);
+  area.setAttribute('d', areaD);
+}
+
+// ============ Slide 9: 打点计时器模拟 ============
+var tapeTimer = null;
+var tapeT = 0;
+var tapeDots = [];
+var tapePositions = []; // 存储每个点的位置(米)
+function startTape(){
+  if(tapeTimer) return;
+  tapeT = 0;
+  tapeDots = [];
+  tapePositions = [];
+  var area = document.getElementById('tapeArea');
+  var areaW = area.offsetWidth;
+  // 模拟加速运动: x = 0.5*a*t², a=2, 打点周期0.02s
+  // 总时间设为约2s(100个点), 取每5个点取一个计数点
+  var dotInterval = 0.02; // 50Hz
+  tapeTimer = setInterval(function(){
+    tapeT += dotInterval;
+    var x = 0.5 * 2 * tapeT * tapeT; // 加速运动位移
+    tapePositions.push(x);
+    // 将米映射到像素 (总位移约4m映射到areaW)
+    var px = (x / 4) * (areaW - 60) + 30;
+    px = Math.min(px, areaW - 10);
+    // 每5个点画一个可见点
+    var idx = tapePositions.length;
+    if(idx % 5 === 0){
+      var dot = document.createElement('div');
+      dot.className = 'tape-dot';
+      dot.style.left = px + 'px';
+      area.appendChild(dot);
+      tapeDots.push({el: dot, x: x, t: tapeT, px: px});
+
+      // 标注计数点
+      var mark = document.createElement('div');
+      mark.className = 'tape-mark';
+      mark.style.left = px + 'px';
+      var countNum = tapeDots.length;
+      mark.textContent = countNum;
+      area.appendChild(mark);
+    }
+    // 更新小车位置
+    document.getElementById('tapeCart').style.left = (px + 20) + 'px';
+    document.getElementById('tapeDisplay').textContent =
+      't=' + tapeT.toFixed(2) + 's | 已打' + idx + '个点 | 位移=' + x.toFixed(2) + 'm';
+
+    if(tapeT >= 2.0 || px >= areaW - 30){
+      clearInterval(tapeTimer); tapeTimer = null;
+      document.getElementById('tapeDisplay').textContent = '实验完成！共打' + idx + '个点，可点击"分析纸带"';
+    }
+  }, 30); // 加快播放速度
+}
+
+function resetTape(){
+  if(tapeTimer){ clearInterval(tapeTimer); tapeTimer = null; }
+  tapeT = 0;
+  tapeDots = [];
+  tapePositions = [];
+  var area = document.getElementById('tapeArea');
+  var dots = area.querySelectorAll('.tape-dot, .tape-mark');
+  for(var i = 0; i < dots.length; i++){
+    dots[i].remove();
+  }
+  document.getElementById('tapeCart').style.left = '20px';
+  document.getElementById('tapeDisplay').textContent = '点击"开始打点"启动实验';
+  document.getElementById('tapeAnalysis').style.display = 'none';
+}
+
+function analyzeTape(){
+  if(tapeDots.length < 3){
+    document.getElementById('tapeDisplay').textContent = '请先完成打点实验！';
+    return;
+  }
+  var html = '';
+  html += '<p>📌 选取计数点（每5个打点取1个，即 T = 5 × 0.02 s = <b>0.10 s</b>）</p>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;">';
+  html += '<tr style="background:#e8f0fe;"><th style="padding:5px;border:1px solid #ddd;">计数点</th><th style="padding:5px;border:1px solid #ddd;">位置 x (m)</th><th style="padding:5px;border:1px solid #ddd;">Δx (m)</th><th style="padding:5px;border:1px solid #ddd;">v (m/s)</th></tr>';
+
+  for(var i = 0; i < tapeDots.length; i++){
+    var d = tapeDots[i];
+    var dx = '', v = '';
+    if(i > 0){
+      var prev = tapeDots[i-1];
+      dx = (d.x - prev.x).toFixed(3);
+      v = ((d.x - prev.x) / 0.10).toFixed(2);
+    }
+    html += '<tr><td style="padding:5px;border:1px solid #ddd;text-align:center;">' + (i+1) + '</td>';
+    html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;">' + d.x.toFixed(3) + '</td>';
+    html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;">' + dx + '</td>';
+    html += '<td style="padding:5px;border:1px solid #ddd;text-align:center;">' + v + '</td></tr>';
+  }
+  html += '</table>';
+
+  // 计算并展示结论
+  if(tapeDots.length >= 3){
+    var mid = Math.floor(tapeDots.length / 2);
+    if(mid > 0 && mid < tapeDots.length - 1){
+      var v1 = (tapeDots[mid].x - tapeDots[mid-1].x) / 0.10;
+      var v2 = (tapeDots[mid+1].x - tapeDots[mid].x) / 0.10;
+      html += '<div style="margin-top:10px;padding:10px;background:#e8f9f0;border-radius:6px;">';
+      html += '✅ 结论：相邻计数点间速度逐渐<b>增大</b>（v₁=' + v1.toFixed(2) + ' m/s → v₂=' + v2.toFixed(2) + ' m/s），说明小车做<b>加速运动</b>。<br>';
+      html += '💡 通过选取极短时间间隔内的平均速度，可以<b>近似测量</b>瞬时速度！';
+      html += '</div>';
+    }
+  }
+
+  document.getElementById('tapeResult').innerHTML = html;
+  document.getElementById('tapeAnalysis').style.display = 'block';
+}
+
+// ============ Slide 10: 课堂练习 ============
+var quizAnswered = {};
+function checkQuiz(el, qNum, isCorrect){
+  if(quizAnswered[qNum]) return; // 已答过
+  quizAnswered[qNum] = true;
+  var opts = el.parentNode.querySelectorAll('.quiz-opt');
+  var fb = document.getElementById('quizFb-' + qNum);
+
+  // 标出正确答案
+  for(var i = 0; i < opts.length; i++){
+    var isThisCorrect = opts[i].getAttribute('onclick').indexOf('true') > -1;
+    if(isThisCorrect){
+      opts[i].classList.add('correct');
+    }
+  }
+
+  if(isCorrect){
+    el.classList.add('correct');
+    fb.className = 'quiz-feedback show right';
+    var explanations = {
+      1: '✅ 正确！速度是描述位置变化<b>快慢</b>的物理量，不是位置变化本身（那是位移）。',
+      2: '✅ 正确！设总位移为2s，前半段用时 s/4，后半段用时 s/6，全程平均速度 v̄ = 2s/(s/4+s/6) = 2s/(5s/12) = 24/5 = <b>4.8 m/s</b>。注意：不能简单取算术平均！',
+      3: '✅ 正确！当Δt→0时，平均速度趋近瞬时速度，这是<b>极限思想</b>的核心。'
+    };
+    fb.innerHTML = explanations[qNum];
+  } else {
+    el.classList.add('wrong');
+    fb.className = 'quiz-feedback show miss';
+    var wrongExplanations = {
+      1: '❌ 不对。速度描述的是位置变化的<b>快慢</b>，不是位置变化本身（位移才描述位置变化）。正确答案是B。',
+      2: '❌ 不对。平均速度 = 总位移/总时间，不能简单取算术平均。设总位移2s，前半段时间s/4，后半段时间s/6，全程v̄=2s/(s/4+s/6)=4.8 m/s。正确答案是B。',
+      3: '❌ 不对。平均速度是位移与时间之比，不是初末速度的算术平均。当Δt→0时，平均速度趋近瞬时速度。正确答案是B。'
+    };
+    fb.innerHTML = wrongExplanations[qNum];
+  }
+}
+
+// ============ 初始化 ============
+updateNav();
+</script>
+</body>
+</html>

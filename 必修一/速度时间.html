@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>速度-时间图像 · 竖直运动的小猴</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: linear-gradient(145deg, #f0f5fb 0%, #e3eaf2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 18px;
+        }
+        .app-container {
+            max-width: 1120px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(8px);
+            border-radius: 44px;
+            padding: 26px 30px 30px 30px;
+            box-shadow: 0 24px 64px rgba(0, 20, 40, 0.16), 0 6px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 6px 18px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: #0b2a3e;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header h1 small {
+            font-size: 15px;
+            font-weight: 400;
+            color: #5a7a92;
+        }
+        .header .badge {
+            background: #dce6f0;
+            color: #1a3b55;
+            padding: 4px 18px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .main-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 22px;
+            margin-bottom: 18px;
+        }
+        .track-card,
+        .graph-card {
+            flex: 1 1 0;
+            min-width: 260px;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 28px;
+            padding: 14px 14px 10px 14px;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), 0 4px 16px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(2px);
+        }
+        .track-card {
+            flex: 0 0 280px;
+        }
+        .graph-card {
+            flex: 1;
+        }
+        .card-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #3f627c;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            padding-left: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-label .value-display {
+            font-size: 14px;
+            font-weight: 500;
+            color: #0b2a3e;
+            background: rgba(0, 0, 0, 0.04);
+            padding: 0 14px;
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: none;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #fafcff;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            image-rendering: crisp-edges;
+        }
+        #trackCanvas {
+            aspect-ratio: 200 / 440;
+        }
+        #graphCanvas {
+            aspect-ratio: 560 / 440;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px 16px;
+            margin-top: 2px;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(2px);
+        }
+        .mode-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .mode-btn {
+            padding: 5px 14px;
+            border: none;
+            border-radius: 40px;
+            font-size: 12.5px;
+            font-weight: 500;
+            background: rgba(200, 215, 230, 0.35);
+            color: #1d3b53;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .mode-btn:hover {
+            background: rgba(180, 200, 220, 0.5);
+            transform: scale(0.96);
+        }
+        .mode-btn.active {
+            background: #0b2a3e;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(11, 42, 62, 0.22);
+            border-color: #0b2a3e;
+        }
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .ctrl-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 40px;
+            border: none;
+            background: rgba(200, 215, 230, 0.35);
+            color: #1d3b53;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            font-family: inherit;
+        }
+        .ctrl-btn:hover {
+            background: rgba(180, 200, 220, 0.5);
+            transform: scale(0.94);
+        }
+        .ctrl-btn.primary {
+            background: #0b2a3e;
+            color: #fff;
+        }
+        .ctrl-btn.primary:hover {
+            background: #143d57;
+            transform: scale(0.94);
+        }
+        .ctrl-btn:active {
+            transform: scale(0.90);
+        }
+        .speed-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: auto;
+            font-size: 13px;
+            color: #2b4b64;
+        }
+        .speed-group input[type="range"] {
+            width: 76px;
+            accent-color: #0b2a3e;
+            height: 4px;
+            border-radius: 4px;
+            background: #cbdae7;
+        }
+        .speed-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #0b2a3e;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+        .info-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 20px;
+            padding: 6px 6px 0 6px;
+            font-size: 14px;
+            color: #1d3b53;
+            font-weight: 500;
+        }
+        .info-item {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 2px 14px 2px 12px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .info-item .label {
+            font-weight: 400;
+            color: #5a7a92;
+            font-size: 13px;
+        }
+        .info-item .value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: #0b2a3e;
+            min-width: 50px;
+        }
+        .info-item .value.speed-val {
+            color: #c44536;
+        }
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        @media (max-width: 780px) {
+            .app-container {
+                padding: 14px;
+            }
+            .track-card,
+            .graph-card {
+                flex: 1 1 100%;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .speed-group {
+                margin-left: 0;
+            }
+            .mode-group,
+            .action-group {
+                justify-content: center;
+            }
+            .info-bar {
+                justify-content: center;
+            }
+        }
+        @media (max-width: 460px) {
+            .header h1 {
+                font-size: 19px;
+            }
+            .mode-btn {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            .ctrl-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="header">
+            <h1>⚡ 速度–时间图像 <small>竖直运动的小猴</small></h1>
+            <span class="badge" id="motionNameBadge">匀速上升</span>
+        </div>
+
+        <div class="main-area">
+            <div class="track-card">
+                <div class="card-label">
+                    <span>🐒 竖直轨道 · 小猴</span>
+                    <span class="value-display" id="posDisplay">s = 0.00 m</span>
+                </div>
+                <canvas id="trackCanvas" width="200" height="440"></canvas>
+            </div>
+            <div class="graph-card">
+                <div class="card-label">
+                    <span>📈 速度 – 时间</span>
+                    <span class="value-display" id="timeDisplay">t = 0.00 s</span>
+                </div>
+                <canvas id="graphCanvas" width="560" height="440"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="mode-group" id="modeGroup">
+                <button class="mode-btn active" data-mode="uniform-up">匀速上升</button>
+                <button class="mode-btn" data-mode="uniform-down">匀速下降</button>
+                <button class="mode-btn" data-mode="accelerate-up">匀加速上升</button>
+                <button class="mode-btn" data-mode="decelerate-up">匀减速上升</button>
+                <button class="mode-btn" data-mode="accelerate-down">匀加速下降</button>
+                <button class="mode-btn" data-mode="decelerate-down">匀减速下降</button>
+            </div>
+            <div class="action-group">
+                <button class="ctrl-btn primary" id="playBtn" title="播放 / 暂停">▶</button>
+                <button class="ctrl-btn" id="resetBtn" title="重置">⟳</button>
+            </div>
+            <div class="speed-group">
+                <span>🐢</span>
+                <input type="range" id="speedSlider" min="0.1" max="3.0" step="0.1" value="1.0" />
+                <span>🐇</span>
+                <span id="speedLabel" style="min-width:32px;font-weight:600;">1.0×</span>
+            </div>
+        </div>
+
+        <div class="info-bar">
+            <span class="info-item"><span class="label">⏱ 时间</span><span class="value" id="infoTime">0.00 s</span></span>
+            <span class="info-item"><span class="label">📏 位移</span><span class="value" id="infoPos">0.00 m</span></span>
+            <span class="info-item"><span class="label">⚡ 速度</span><span class="value speed-val" id="infoSpeed">0.00 m/s</span></span>
+            <span class="info-item" id="legendItem"><span class="legend-dot" id="legendDot" style="background:#2196F3;"></span><span id="legendText">匀速上升</span></span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 1. 运动模式定义 (6种，位移范围 ±10，持续时间5s，位移控制在 ±7.5 以内)
+        // ============================================================
+        const MOTIONS = {
+            'uniform-up': {
+                name: '匀速上升',
+                color: '#2196F3',
+                s: (t) => 1.4 * t,
+                v: (t) => 1.4,
+                duration: 5.0,
+                desc: 'v = 1.4 m/s'
+            },
+            'uniform-down': {
+                name: '匀速下降',
+                color: '#F44336',
+                s: (t) => -1.4 * t,
+                v: (t) => -1.4,
+                duration: 5.0,
+                desc: 'v = -1.4 m/s'
+            },
+            'accelerate-up': {
+                name: '匀加速上升',
+                color: '#2E7D32',
+                s: (t) => 0.3 * t * t,
+                v: (t) => 0.6 * t,
+                duration: 5.0,
+                desc: 'a = 0.6 m/s²'
+            },
+            'decelerate-up': {
+                name: '匀减速上升',
+                color: '#E65100',
+                s: (t) => 2.8 * t - 0.3 * t * t,
+                v: (t) => 2.8 - 0.6 * t,
+                duration: 5.0,
+                desc: 'v₀ = 2.8 m/s, a = -0.6 m/s²'
+            },
+            'accelerate-down': {
+                name: '匀加速下降',
+                color: '#00695C',
+                s: (t) => -0.3 * t * t,
+                v: (t) => -0.6 * t,
+                duration: 5.0,
+                desc: 'a = -0.6 m/s²'
+            },
+            'decelerate-down': {
+                name: '匀减速下降',
+                color: '#AD1457',
+                s: (t) => -2.8 * t + 0.3 * t * t,
+                v: (t) => -2.8 + 0.6 * t,
+                duration: 5.0,
+                desc: 'v₀ = -2.8 m/s, a = 0.6 m/s²'
+            }
+        };
+
+        // ============================================================
+        // 2. DOM 引用 & 状态
+        // ============================================================
+        const trackCanvas = document.getElementById('trackCanvas');
+        const graphCanvas = document.getElementById('graphCanvas');
+        const ctxTrack = trackCanvas.getContext('2d');
+        const ctxGraph = graphCanvas.getContext('2d');
+
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const playBtn = document.getElementById('playBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedLabel = document.getElementById('speedLabel');
+        const motionNameBadge = document.getElementById('motionNameBadge');
+        const posDisplay = document.getElementById('posDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const infoTime = document.getElementById('infoTime');
+        const infoPos = document.getElementById('infoPos');
+        const infoSpeed = document.getElementById('infoSpeed');
+        const legendDot = document.getElementById('legendDot');
+        const legendText = document.getElementById('legendText');
+
+        let currentMode = 'uniform-up';
+        let isPlaying = false;
+        let currentTime = 0;
+        let speedFactor = 1.0;
+        let animId = null;
+        let lastTimestamp = 0;
+
+        function getMotion(mode) { return MOTIONS[mode] || MOTIONS['uniform-up']; }
+
+        function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+        // ============================================================
+        // 3. 坐标映射 (范围 ±10)
+        // ============================================================
+        function trackY(s, trackH) {
+            const sMin = -10,
+                sMax = 10;
+            const pad = 28;
+            const range = sMax - sMin;
+            const ratio = (s - sMin) / range;
+            return trackH - pad - ratio * (trackH - 2 * pad);
+        }
+
+        // 速度-时间图像：横轴为时间，纵轴为速度，v=0 位于画布中部，范围 ±10
+        function graphX(t, graphW, duration) {
+            const padL = 50,
+                padR = 24;
+            const drawW = graphW - padL - padR;
+            const dur = Math.max(duration, 0.1);
+            return padL + (t / dur) * drawW;
+        }
+
+        function graphY(v, graphH) {
+            const vMin = -10,
+                vMax = 10;
+            const padB = 30,
+                padT = 20;
+            const drawH = graphH - padB - padT;
+            const midY = padT + drawH / 2;
+            const ratio = (v - vMin) / (vMax - vMin);
+            return padT + drawH * (1 - ratio);
+        }
+
+        // ============================================================
+        // 4. 绘制实心、高对比度的微型猴子 (scale=0.17)
+        // ============================================================
+        function drawMonkey(ctx, footX, footY, color, scale) {
+            const s = scale || 0.17;
+            // 身体中心在 footX, footY - 20*s
+            const bodyY = footY - 18 * s;
+            const headR = 10 * s;
+            const headY = bodyY - 14 * s;
+
+            // 所有线条和填充使用实心颜色，并添加黑色描边增强对比
+
+            // ---- 尾巴 ----
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#4E342E';
+            ctx.lineWidth = 3 * s;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(footX - 6 * s, bodyY + 4 * s);
+            ctx.quadraticCurveTo(footX - 20 * s, bodyY - 6 * s, footX - 16 * s, bodyY - 20 * s);
+            ctx.stroke();
+            // 尾巴描边（更亮）
+            ctx.strokeStyle = '#8D6E63';
+            ctx.lineWidth = 1.5 * s;
+            ctx.beginPath();
+            ctx.moveTo(footX - 6 * s, bodyY + 4 * s);
+            ctx.quadraticCurveTo(footX - 20 * s, bodyY - 6 * s, footX - 16 * s, bodyY - 20 * s);
+            ctx.stroke();
+
+            // ---- 身体 ----
+            ctx.shadowBlur = 0;
+            // 填充身体
+            ctx.fillStyle = '#6D4C41'; // 深棕色
+            ctx.beginPath();
+            ctx.ellipse(footX, bodyY, 12 * s, 14 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // 黑色描边
+            ctx.strokeStyle = '#2C1A0E';
+            ctx.lineWidth = 1.8 * s;
+            ctx.stroke();
+
+            // 肚子（浅色填充）
+            ctx.fillStyle = '#BCAAA4';
+            ctx.beginPath();
+            ctx.ellipse(footX, bodyY + 2 * s, 8 * s, 10 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#4E342E';
+            ctx.lineWidth = 0.8 * s;
+            ctx.stroke();
+
+            // ---- 手臂 ----
+            ctx.strokeStyle = '#4E342E';
+            ctx.lineWidth = 3.5 * s;
+            ctx.lineCap = 'round';
+            // 左臂
+            ctx.beginPath();
+            ctx.moveTo(footX - 10 * s, bodyY - 6 * s);
+            ctx.quadraticCurveTo(footX - 18 * s, bodyY - 2 * s, footX - 16 * s, bodyY + 8 * s);
+            ctx.stroke();
+            // 右臂
+            ctx.beginPath();
+            ctx.moveTo(footX + 10 * s, bodyY - 6 * s);
+            ctx.quadraticCurveTo(footX + 18 * s, bodyY - 2 * s, footX + 16 * s, bodyY + 8 * s);
+            ctx.stroke();
+            // 手臂高光（亮色细线）
+            ctx.strokeStyle = '#8D6E63';
+            ctx.lineWidth = 1.2 * s;
+            ctx.beginPath();
+            ctx.moveTo(footX - 10 * s, bodyY - 6 * s);
+            ctx.quadraticCurveTo(footX - 18 * s, bodyY - 2 * s, footX - 16 * s, bodyY + 8 * s);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(footX + 10 * s, bodyY - 6 * s);
+            ctx.quadraticCurveTo(footX + 18 * s, bodyY - 2 * s, footX + 16 * s, bodyY + 8 * s);
+            ctx.stroke();
+
+            // ---- 腿 ----
+            ctx.strokeStyle = '#4E342E';
+            ctx.lineWidth = 4 * s;
+            ctx.beginPath();
+            ctx.moveTo(footX - 5 * s, bodyY + 12 * s);
+            ctx.lineTo(footX - 6 * s, footY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(footX + 5 * s, bodyY + 12 * s);
+            ctx.lineTo(footX + 6 * s, footY);
+            ctx.stroke();
+            // 腿高光
+            ctx.strokeStyle = '#8D6E63';
+            ctx.lineWidth = 1.5 * s;
+            ctx.beginPath();
+            ctx.moveTo(footX - 5 * s, bodyY + 12 * s);
+            ctx.lineTo(footX - 6 * s, footY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(footX + 5 * s, bodyY + 12 * s);
+            ctx.lineTo(footX + 6 * s, footY);
+            ctx.stroke();
+
+            // ---- 脚 ----
+            ctx.fillStyle = '#3E2723';
+            ctx.beginPath();
+            ctx.ellipse(footX - 6 * s, footY, 4.5 * s, 3 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#2C1A0E';
+            ctx.lineWidth = 1 * s;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(footX + 6 * s, footY, 4.5 * s, 3 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // ---- 头部 ----
+            ctx.shadowBlur = 0;
+            // 头部底色
+            ctx.fillStyle = '#6D4C41';
+            ctx.beginPath();
+            ctx.arc(footX, headY, headR, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#2C1A0E';
+            ctx.lineWidth = 1.8 * s;
+            ctx.stroke();
+
+            // 脸部（浅色区域）
+            ctx.fillStyle = '#D7CCC8';
+            ctx.beginPath();
+            ctx.ellipse(footX, headY + 1 * s, 7 * s, 8 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#4E342E';
+            ctx.lineWidth = 0.8 * s;
+            ctx.stroke();
+
+            // ---- 耳朵 ----
+            ctx.fillStyle = '#4E342E';
+            ctx.beginPath();
+            ctx.ellipse(footX - 10 * s, headY - 2 * s, 4.5 * s, 6.5 * s, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#2C1A0E';
+            ctx.lineWidth = 1 * s;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.ellipse(footX + 10 * s, headY - 2 * s, 4.5 * s, 6.5 * s, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // 耳内
+            ctx.fillStyle = '#BCAAA4';
+            ctx.beginPath();
+            ctx.ellipse(footX - 10 * s, headY - 2 * s, 2.5 * s, 4 * s, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(footX + 10 * s, headY - 2 * s, 2.5 * s, 4 * s, 0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // ---- 眼睛 ----
+            ctx.fillStyle = '#1A1A1A';
+            ctx.beginPath();
+            ctx.arc(footX - 4 * s, headY - 1 * s, 2.2 * s, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(footX + 4 * s, headY - 1 * s, 2.2 * s, 0, Math.PI * 2);
+            ctx.fill();
+            // 高光
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(footX - 3 * s, headY - 2.5 * s, 0.8 * s, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(footX + 5 * s, headY - 2.5 * s, 0.8 * s, 0, Math.PI * 2);
+            ctx.fill();
+
+            // ---- 鼻子 ----
+            ctx.fillStyle = '#E57373';
+            ctx.beginPath();
+            ctx.ellipse(footX, headY + 1.5 * s, 2 * s, 1.5 * s, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#C62828';
+            ctx.lineWidth = 0.5 * s;
+            ctx.stroke();
+
+            // ---- 嘴巴 ----
+            ctx.strokeStyle = '#C62828';
+            ctx.lineWidth = 1.2 * s;
+            ctx.beginPath();
+            ctx.arc(footX, headY + 3 * s, 3 * s, 0.1 * Math.PI, 0.9 * Math.PI);
+            ctx.stroke();
+
+            // ---- 额头纹路 ----
+            ctx.strokeStyle = '#4E342E';
+            ctx.lineWidth = 1.2 * s;
+            ctx.beginPath();
+            ctx.moveTo(footX - 3 * s, headY - 7 * s);
+            ctx.quadraticCurveTo(footX, headY - 9 * s, footX + 3 * s, headY - 7 * s);
+            ctx.stroke();
+
+            // ---- 头顶毛 ----
+            ctx.strokeStyle = '#3E2723';
+            ctx.lineWidth = 2 * s;
+            for (let i = -2; i <= 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(footX + i * 2.5 * s, headY - headR + 1 * s);
+                ctx.lineTo(footX + i * 3 * s, headY - headR - 5 * s);
+                ctx.stroke();
+            }
+            // 毛高光
+            ctx.strokeStyle = '#8D6E63';
+            ctx.lineWidth = 0.8 * s;
+            for (let i = -2; i <= 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(footX + i * 2.5 * s, headY - headR + 1 * s);
+                ctx.lineTo(footX + i * 3 * s, headY - headR - 5 * s);
+                ctx.stroke();
+            }
+
+            // ---- 整体外发光（可选）不添加，保持清晰 ----
+            ctx.shadowBlur = 0;
+        }
+
+        // ============================================================
+        // 5. 绘制轨道 (含猴子，刻度 ±10)
+        // ============================================================
+        function drawTrack(time, mode) {
+            const W = trackCanvas.width,
+                H = trackCanvas.height;
+            ctxTrack.clearRect(0, 0, W, H);
+
+            const motion = getMotion(mode);
+            const s = motion.s(time);
+            const clampedS = clamp(s, -10, 10);
+
+            const grad = ctxTrack.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#e8eff7');
+            grad.addColorStop(1, '#d5e0ec');
+            ctxTrack.fillStyle = grad;
+            ctxTrack.fillRect(0, 0, W, H);
+
+            const railX = W / 2;
+            ctxTrack.lineWidth = 3;
+            ctxTrack.strokeStyle = '#8aa3b9';
+            ctxTrack.shadowColor = 'rgba(0,0,0,0.04)';
+            ctxTrack.shadowBlur = 4;
+            ctxTrack.beginPath();
+            ctxTrack.moveTo(railX, 18);
+            ctxTrack.lineTo(railX, H - 18);
+            ctxTrack.stroke();
+            ctxTrack.shadowBlur = 0;
+
+            // 刻度：从 -10 到 10，步长2
+            ctxTrack.font = '11px "Segoe UI", system-ui, sans-serif';
+            ctxTrack.textAlign = 'center';
+            ctxTrack.textBaseline = 'middle';
+            for (let val = -10; val <= 10; val += 2) {
+                const yPos = trackY(val, H);
+                ctxTrack.fillStyle = '#5a7a92';
+                ctxTrack.fillRect(railX - 8, yPos - 1, 16, 2);
+                ctxTrack.fillStyle = '#4a6a82';
+                ctxTrack.font = '10px "Segoe UI", system-ui, sans-serif';
+                ctxTrack.textAlign = 'right';
+                ctxTrack.textBaseline = 'middle';
+                ctxTrack.fillText(val + '', railX - 14, yPos);
+                ctxTrack.fillStyle = '#8aa3b9';
+                ctxTrack.fillRect(railX - 12, yPos - 0.5, 6, 1);
+            }
+            ctxTrack.textAlign = 'center';
+            ctxTrack.fillStyle = '#3f627c';
+            ctxTrack.font = '10px "Segoe UI", system-ui, sans-serif';
+            ctxTrack.textBaseline = 'top';
+            ctxTrack.fillText('s / m', railX + 30, 4);
+
+            const zeroY = trackY(0, H);
+            ctxTrack.strokeStyle = 'rgba(180, 60, 60, 0.20)';
+            ctxTrack.lineWidth = 1;
+            ctxTrack.setLineDash([3, 5]);
+            ctxTrack.beginPath();
+            ctxTrack.moveTo(railX - 16, zeroY);
+            ctxTrack.lineTo(railX + 16, zeroY);
+            ctxTrack.stroke();
+            ctxTrack.setLineDash([]);
+
+            const footY = trackY(clampedS, H);
+            const color = motion.color;
+            // 绘制实心猴子，scale=0.17
+            drawMonkey(ctxTrack, railX, footY, color, 0.17);
+
+            ctxTrack.fillStyle = '#0b2a3e';
+            ctxTrack.font = 'bold 13px "Segoe UI", system-ui, sans-serif';
+            ctxTrack.textAlign = 'left';
+            ctxTrack.textBaseline = 'middle';
+            const label = (s >= 0 ? '+' : '') + s.toFixed(2) + ' m';
+            ctxTrack.fillText(label, railX + 20, footY - 2);
+
+            ctxTrack.fillStyle = 'rgba(0,0,0,0.06)';
+            ctxTrack.beginPath();
+            ctxTrack.arc(railX, footY, 1.5, 0, Math.PI * 2);
+            ctxTrack.fill();
+        }
+
+        // ============================================================
+        // 6. 绘制速度-时间图 (横轴在 v=0 处，范围 ±10)
+        // ============================================================
+        let cachedVPoints = [];
+
+        function drawGraph(time, mode) {
+            const W = graphCanvas.width,
+                H = graphCanvas.height;
+            ctxGraph.clearRect(0, 0, W, H);
+
+            const motion = getMotion(mode);
+            const duration = motion.duration;
+            const color = motion.color;
+
+            const padL = 50,
+                padR = 24,
+                padB = 30,
+                padT = 20;
+            const drawW = W - padL - padR;
+            const drawH = H - padB - padT;
+            const midY = padT + drawH / 2;
+
+            ctxGraph.fillStyle = '#fafcff';
+            ctxGraph.fillRect(0, 0, W, H);
+
+            // ---- 网格：速度范围 -10 ~ 10，步长2 ----
+            ctxGraph.strokeStyle = 'rgba(180, 200, 220, 0.30)';
+            ctxGraph.lineWidth = 0.8;
+            for (let v = -10; v <= 10; v += 2) {
+                const yPos = graphY(v, H);
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(padL, yPos);
+                ctxGraph.lineTo(W - padR, yPos);
+                ctxGraph.stroke();
+            }
+            const steps = 10;
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * duration;
+                const xPos = graphX(t, W, duration);
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(xPos, padT);
+                ctxGraph.lineTo(xPos, H - padB);
+                ctxGraph.stroke();
+            }
+
+            // ---- 坐标轴 ----
+            ctxGraph.strokeStyle = '#2b4b64';
+            ctxGraph.lineWidth = 2;
+            ctxGraph.beginPath();
+            ctxGraph.moveTo(padL, padT);
+            ctxGraph.lineTo(padL, H - padB);
+            ctxGraph.stroke();
+            ctxGraph.beginPath();
+            ctxGraph.moveTo(padL, midY);
+            ctxGraph.lineTo(W - padR, midY);
+            ctxGraph.stroke();
+
+            // ---- 轴标签 ----
+            ctxGraph.fillStyle = '#2b4b64';
+            ctxGraph.font = '13px "Segoe UI", system-ui, sans-serif';
+            ctxGraph.textAlign = 'center';
+            ctxGraph.textBaseline = 'top';
+            ctxGraph.fillText('t / s', W - padR + 6, midY + 4);
+            ctxGraph.textAlign = 'center';
+            ctxGraph.textBaseline = 'bottom';
+            ctxGraph.fillText('v / (m·s⁻¹)', padL - 8, padT - 4);
+
+            // ---- 刻度：速度 -10 ~ 10，步长2 ----
+            ctxGraph.font = '10px "Segoe UI", system-ui, sans-serif';
+            ctxGraph.textAlign = 'right';
+            ctxGraph.textBaseline = 'middle';
+            for (let v = -10; v <= 10; v += 2) {
+                const yPos = graphY(v, H);
+                ctxGraph.fillStyle = '#4a6a82';
+                ctxGraph.fillText(v + '', padL - 8, yPos);
+            }
+            ctxGraph.textAlign = 'center';
+            ctxGraph.textBaseline = 'top';
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * duration;
+                const xPos = graphX(t, W, duration);
+                ctxGraph.fillStyle = '#4a6a82';
+                ctxGraph.fillText(t.toFixed(1), xPos, midY + 4);
+            }
+
+            // 原点
+            const originX = graphX(0, W, duration);
+            ctxGraph.fillStyle = 'rgba(0,0,0,0.25)';
+            ctxGraph.beginPath();
+            ctxGraph.arc(originX, midY, 4, 0, Math.PI * 2);
+            ctxGraph.fill();
+
+            // ---- 绘制 v-t 曲线 ----
+            const currentT = Math.min(time, duration);
+            if (currentT > 0) {
+                const points = [];
+                const segments = Math.max(200, Math.floor(currentT / duration * 600));
+                for (let i = 0; i <= segments; i++) {
+                    const t = (i / segments) * currentT;
+                    const vVal = motion.v(t);
+                    const x = graphX(t, W, duration);
+                    const y = graphY(vVal, H);
+                    points.push({ x, y, t, v: vVal });
+                }
+                cachedVPoints = points;
+
+                ctxGraph.beginPath();
+                ctxGraph.strokeStyle = color;
+                ctxGraph.lineWidth = 3;
+                ctxGraph.shadowColor = 'rgba(0,0,0,0.06)';
+                ctxGraph.shadowBlur = 6;
+                for (let i = 0; i < points.length; i++) {
+                    if (i === 0) ctxGraph.moveTo(points[i].x, points[i].y);
+                    else ctxGraph.lineTo(points[i].x, points[i].y);
+                }
+                ctxGraph.stroke();
+                ctxGraph.shadowBlur = 0;
+
+                // 填充面积
+                if (points.length > 1) {
+                    const baseY = midY;
+                    ctxGraph.beginPath();
+                    ctxGraph.moveTo(points[0].x, baseY);
+                    for (let i = 0; i < points.length; i++) {
+                        ctxGraph.lineTo(points[i].x, points[i].y);
+                    }
+                    ctxGraph.lineTo(points[points.length - 1].x, baseY);
+                    ctxGraph.closePath();
+                    ctxGraph.fillStyle = color + '18';
+                    ctxGraph.fill();
+                }
+
+                // 当前点
+                const last = points[points.length - 1];
+                ctxGraph.shadowColor = 'rgba(0,0,0,0.12)';
+                ctxGraph.shadowBlur = 12;
+                ctxGraph.beginPath();
+                ctxGraph.arc(last.x, last.y, 7, 0, Math.PI * 2);
+                ctxGraph.fillStyle = color;
+                ctxGraph.fill();
+                ctxGraph.shadowBlur = 0;
+                ctxGraph.strokeStyle = '#fff';
+                ctxGraph.lineWidth = 2.5;
+                ctxGraph.beginPath();
+                ctxGraph.arc(last.x, last.y, 7, 0, Math.PI * 2);
+                ctxGraph.stroke();
+
+                // 参考虚线
+                ctxGraph.setLineDash([4, 5]);
+                ctxGraph.strokeStyle = 'rgba(0,0,0,0.14)';
+                ctxGraph.lineWidth = 1.2;
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(last.x, padT);
+                ctxGraph.lineTo(last.x, last.y);
+                ctxGraph.stroke();
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(padL, last.y);
+                ctxGraph.lineTo(last.x, last.y);
+                ctxGraph.stroke();
+                ctxGraph.setLineDash([]);
+
+                // 坐标值
+                ctxGraph.fillStyle = '#0b2a3e';
+                ctxGraph.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+                ctxGraph.textAlign = 'left';
+                ctxGraph.textBaseline = 'bottom';
+                const coordText = `(${last.t.toFixed(2)} s, ${last.v.toFixed(2)} m/s)`;
+                ctxGraph.fillText(coordText, last.x + 12, last.y - 6);
+
+            } else {
+                const originX = graphX(0, W, duration);
+                ctxGraph.fillStyle = 'rgba(0,0,0,0.20)';
+                ctxGraph.beginPath();
+                ctxGraph.arc(originX, midY, 5, 0, Math.PI * 2);
+                ctxGraph.fill();
+                cachedVPoints = [];
+            }
+
+            // 当前时间竖线
+            if (currentT > 0 && currentT < duration) {
+                const xPos = graphX(currentT, W, duration);
+                ctxGraph.strokeStyle = 'rgba(0,0,0,0.07)';
+                ctxGraph.lineWidth = 1;
+                ctxGraph.setLineDash([3, 4]);
+                ctxGraph.beginPath();
+                ctxGraph.moveTo(xPos, padT);
+                ctxGraph.lineTo(xPos, H - padB);
+                ctxGraph.stroke();
+                ctxGraph.setLineDash([]);
+            }
+        }
+
+        // ============================================================
+        // 7. 更新 UI & 动画循环
+        // ============================================================
+        function updateUI(time, mode) {
+            const motion = getMotion(mode);
+            const s = motion.s(time);
+            const v = motion.v(time);
+            const clampedT = Math.min(time, motion.duration);
+
+            posDisplay.textContent = 's = ' + s.toFixed(2) + ' m';
+            timeDisplay.textContent = 't = ' + clampedT.toFixed(2) + ' s';
+            infoTime.textContent = clampedT.toFixed(2) + ' s';
+            infoPos.textContent = s.toFixed(2) + ' m';
+            infoSpeed.textContent = v.toFixed(2) + ' m/s';
+
+            legendDot.style.background = motion.color;
+            legendText.textContent = motion.name;
+            motionNameBadge.textContent = motion.name;
+
+            drawTrack(clampedT, mode);
+            drawGraph(clampedT, mode);
+        }
+
+        function resetAnimation() {
+            currentTime = 0;
+            isPlaying = false;
+            playBtn.textContent = '▶';
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            updateUI(0, currentMode);
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            playBtn.textContent = isPlaying ? '⏸' : '▶';
+            if (isPlaying) {
+                lastTimestamp = performance.now();
+                if (currentTime >= getMotion(currentMode).duration) {
+                    currentTime = 0;
+                }
+                animLoop();
+            } else {
+                if (animId) {
+                    cancelAnimationFrame(animId);
+                    animId = null;
+                }
+            }
+        }
+
+        function animLoop() {
+            if (!isPlaying) return;
+            const now = performance.now();
+            const delta = (now - lastTimestamp) / 1000;
+            lastTimestamp = now;
+            const motion = getMotion(currentMode);
+            currentTime += delta * speedFactor;
+            if (currentTime >= motion.duration) {
+                currentTime = motion.duration;
+                isPlaying = false;
+                playBtn.textContent = '▶';
+                updateUI(currentTime, currentMode);
+                return;
+            }
+            updateUI(currentTime, currentMode);
+            animId = requestAnimationFrame(animLoop);
+        }
+
+        // ============================================================
+        // 8. 控制绑定
+        // ============================================================
+        modeBtns.forEach((btn) => {
+            btn.addEventListener('click', function() {
+                const mode = this.dataset.mode;
+                if (mode === currentMode) return;
+                if (isPlaying) {
+                    isPlaying = false;
+                    playBtn.textContent = '▶';
+                    if (animId) {
+                        cancelAnimationFrame(animId);
+                        animId = null;
+                    }
+                }
+                currentMode = mode;
+                modeBtns.forEach((b) => b.classList.remove('active'));
+                this.classList.add('active');
+                currentTime = 0;
+                updateUI(0, currentMode);
+            });
+        });
+
+        playBtn.addEventListener('click', togglePlay);
+
+        resetBtn.addEventListener('click', function() {
+            if (isPlaying) {
+                isPlaying = false;
+                playBtn.textContent = '▶';
+                if (animId) {
+                    cancelAnimationFrame(animId);
+                    animId = null;
+                }
+            }
+            currentTime = 0;
+            updateUI(0, currentMode);
+        });
+
+        speedSlider.addEventListener('input', function() {
+            speedFactor = parseFloat(this.value);
+            speedLabel.textContent = speedFactor.toFixed(1) + '×';
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            }
+            if (e.key === 'r' || e.key === 'R') {
+                resetBtn.click();
+            }
+        });
+
+        // ============================================================
+        // 9. 初始化
+        // ============================================================
+        document.querySelector('.mode-btn[data-mode="uniform-up"]')?.classList.add('active');
+        currentMode = 'uniform-up';
+        updateUI(0, currentMode);
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                updateUI(currentTime, currentMode);
+            }, 80);
+        });
+
+        console.log('🐒 速度-时间图像 · 竖直运动的小猴 (实心高对比度) 已启动');
+        console.log('📖 快捷键: 空格=播放/暂停, R=重置');
+    </script>
+
+</body>
+</html>

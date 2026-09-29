@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📐 割线·切线 · 双点拖拽</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, system-ui, sans-serif;
+            background: linear-gradient(145deg, #f0f4f8 0%, #dae5f0 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 40px;
+            padding: 28px 32px 32px;
+            box-shadow: 0 25px 60px rgba(0, 20, 40, 0.20), 0 8px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid rgba(60, 100, 160, 0.12);
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a2b4a;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 span {
+            background: linear-gradient(135deg, #2c6bdb, #4a8af4);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 0 18px;
+            border-radius: 40px;
+            line-height: 34px;
+        }
+
+        .header .subtitle {
+            color: #3e5a7a;
+            font-size: 15px;
+            font-weight: 500;
+            background: rgba(60, 100, 160, 0.08);
+            padding: 6px 20px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .main-layout {
+            display: flex;
+            flex-direction: row;
+            gap: 28px;
+            flex-wrap: wrap;
+        }
+
+        .canvas-wrapper {
+            flex: 1 1 700px;
+            min-width: 480px;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 20, 40, 0.08);
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        #slopeCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            border-radius: 20px;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        #slopeCanvas:active {
+            cursor: grabbing;
+        }
+
+        .info-panel {
+            flex: 0 0 320px;
+            min-width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 20px 22px;
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 4px 16px rgba(0, 20, 40, 0.06);
+        }
+
+        .info-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #6b85a5;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(60, 100, 160, 0.08);
+            padding-bottom: 8px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 15px;
+            color: #1e3349;
+            font-weight: 500;
+        }
+
+        .info-row .label {
+            color: #5a7293;
+            font-weight: 450;
+        }
+
+        .info-row .value {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            background: rgba(60, 100, 160, 0.05);
+            padding: 0 12px;
+            border-radius: 12px;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .info-row .value.highlight {
+            background: rgba(44, 107, 219, 0.10);
+            color: #1a4b9e;
+            font-weight: 700;
+            font-size: 17px;
+        }
+
+        .info-row .value.delta {
+            color: #c0392b;
+        }
+
+        .formula-box {
+            background: rgba(0, 20, 40, 0.03);
+            border-radius: 14px;
+            padding: 12px 16px;
+            margin-top: 8px;
+            font-family: 'Courier New', 'Consolas', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0b2647;
+            text-align: center;
+            border: 1px solid rgba(60, 100, 160, 0.08);
+            line-height: 1.6;
+        }
+
+        .formula-box .highlight {
+            color: #2c6bdb;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .btn-group button {
+            flex: 1 0 auto;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a2b4a;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 8px rgba(0, 20, 40, 0.04);
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .btn-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 20, 40, 0.10);
+            background: #ffffff;
+            border-color: #b0c8e0;
+        }
+
+        .btn-group button.primary {
+            background: #1a4b9e;
+            color: #fff;
+            border-color: #1a4b9e;
+        }
+        .btn-group button.primary:hover {
+            background: #2359b8;
+            border-color: #2359b8;
+        }
+        .btn-group button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .footer-tip {
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(60, 100, 160, 0.08);
+            color: #5a7293;
+            font-size: 14px;
+            text-align: center;
+            font-weight: 450;
+        }
+
+        @media (max-width: 920px) {
+            .container {
+                padding: 18px 16px 22px;
+            }
+            .main-layout {
+                flex-direction: column;
+            }
+            .canvas-wrapper {
+                flex: 1 1 auto;
+                min-width: 0;
+                padding: 8px;
+            }
+            .info-panel {
+                flex: 1 1 auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .info-card {
+                flex: 1 1 200px;
+                min-width: 160px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .header .subtitle {
+                font-size: 13px;
+                padding: 4px 14px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .info-card {
+                flex: 1 1 100%;
+                padding: 16px;
+            }
+            .btn-group button {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .header h1 span {
+                font-size: 14px;
+                line-height: 28px;
+                padding: 0 12px;
+            }
+            .container {
+                padding: 12px 10px 16px;
+                border-radius: 24px;
+            }
+            .canvas-wrapper {
+                padding: 4px;
+                border-radius: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                📐 割线 → 切线
+                <span>双点拖拽</span>
+            </h1>
+            <div class="subtitle">🖱️ 拖拽 · 实时探索</div>
+        </div>
+
+        <div class="main-layout">
+            <!-- 画布 -->
+            <div class="canvas-wrapper">
+                <canvas id="slopeCanvas" width="800" height="800"></canvas>
+            </div>
+
+            <!-- 信息面板 -->
+            <div class="info-panel">
+                <!-- 核心数值 -->
+                <div class="info-card">
+                    <h3>📊 斜率数据</h3>
+                    <div class="info-row">
+                        <span class="label">点 P</span>
+                        <span class="value" id="pCoord">(1.00, 1.00)</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">点 Q</span>
+                        <span class="value" id="qCoord">(2.00, 4.00)</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Δx</span>
+                        <span class="value delta" id="deltaX">1.00</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Δy</span>
+                        <span class="value delta" id="deltaY">3.00</span>
+                    </div>
+                    <div class="info-row" style="border-top:1px solid rgba(60,100,160,0.10);padding-top:10px;margin-top:6px;">
+                        <span class="label" style="font-weight:600;">割线斜率</span>
+                        <span class="value highlight" id="secSlope">3.00</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label" style="font-weight:600;">切线斜率 (P)</span>
+                        <span class="value highlight" id="tanSlope">2.00</span>
+                    </div>
+                    <div class="info-row" style="border-top:1px solid rgba(60,100,160,0.10);padding-top:6px;margin-top:4px;">
+                        <span class="label">差值</span>
+                        <span class="value" id="diffSlope" style="color:#c0392b;">1.00</span>
+                    </div>
+                </div>
+
+                <!-- 公式 & 控制 -->
+                <div class="info-card">
+                    <h3>📝 计算公式</h3>
+                    <div class="formula-box">
+                        <div>割线: <span class="highlight">k<sub>sec</sub></span> = Δy / Δx</div>
+                        <div style="font-size:15px;font-weight:400;color:#3a5a7a;">= (f(x<sub>Q</sub>) – f(x<sub>P</sub>)) / (x<sub>Q</sub> – x<sub>P</sub>)</div>
+                        <div style="margin-top:6px;border-top:1px dashed rgba(0,0,0,0.06);padding-top:6px;">
+                            切线: <span class="highlight">k<sub>tan</sub></span> = f'(x<sub>P</sub>) = 2·x<sub>P</sub>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button id="autoBtn" class="primary">▶ 自动趋近</button>
+                        <button id="resetBtn">↺ 重置位置</button>
+                    </div>
+                    <div style="margin-top:6px;font-size:13px;color:#5a7293;">
+                        💡 直接拖拽 <strong>P</strong> 或 <strong>Q</strong> 点 (均沿曲线滑动)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-tip">
+            ⚡ 曲线 f(x) = x² · 拖拽改变点位置 · 割线斜率动态更新 · 切线斜率跟随 P 点
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  1. DOM 引用 & 状态
+        // ================================================================
+        const canvas = document.getElementById('slopeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const pCoordEl = document.getElementById('pCoord');
+        const qCoordEl = document.getElementById('qCoord');
+        const deltaXEl = document.getElementById('deltaX');
+        const deltaYEl = document.getElementById('deltaY');
+        const secSlopeEl = document.getElementById('secSlope');
+        const tanSlopeEl = document.getElementById('tanSlope');
+        const diffSlopeEl = document.getElementById('diffSlope');
+
+        const autoBtn = document.getElementById('autoBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 数学坐标范围
+        const X_MIN = -3.8,
+            X_MAX = 5.2;
+        const Y_MIN = -2.2,
+            Y_MAX = 7.2;
+
+        // 曲线 f(x) = x^2
+        const f = (x) => x * x;
+        const fPrime = (x) => 2 * x;
+
+        // 两个可拖动点的 x 坐标 (y 由函数计算)
+        let pX = 1.0;
+        let qX = 2.0;
+
+        // 拖拽状态
+        let dragging = null; // 'P' 或 'Q'
+        let dragOffsetX = 0; // 屏幕坐标偏移
+
+        // 动画控制
+        let autoRunning = false;
+        let autoAnimId = null;
+
+        // ================================================================
+        //  2. 坐标转换
+        // ================================================================
+        function getCanvasSize() {
+            const rect = canvas.getBoundingClientRect();
+            return { w: rect.width, h: rect.height };
+        }
+
+        function mathToScreen(mx, my) {
+            const { w, h } = getCanvasSize();
+            const scaleX = w / (X_MAX - X_MIN);
+            const scaleY = h / (Y_MAX - Y_MIN);
+            return {
+                x: (mx - X_MIN) * scaleX,
+                y: (Y_MAX - my) * scaleY
+            };
+        }
+
+        function screenToMath(sx, sy) {
+            const { w, h } = getCanvasSize();
+            const scaleX = w / (X_MAX - X_MIN);
+            const scaleY = h / (Y_MAX - Y_MIN);
+            return {
+                x: sx / scaleX + X_MIN,
+                y: Y_MAX - sy / scaleY
+            };
+        }
+
+        // ================================================================
+        //  3. 绘图核心
+        // ================================================================
+        function draw() {
+            const { w, h } = getCanvasSize();
+            ctx.clearRect(0, 0, w, h);
+
+            // ---- 背景 & 网格 ----
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'rgba(180, 200, 220, 0.25)';
+            ctx.lineWidth = 0.5;
+            const step = 0.5;
+            for (let v = Math.ceil(X_MIN / step) * step; v <= X_MAX; v += step) {
+                const sp = mathToScreen(v, 0);
+                ctx.beginPath();
+                ctx.moveTo(sp.x, 0);
+                ctx.lineTo(sp.x, h);
+                ctx.stroke();
+            }
+            for (let v = Math.ceil(Y_MIN / step) * step; v <= Y_MAX; v += step) {
+                const sp = mathToScreen(0, v);
+                ctx.beginPath();
+                ctx.moveTo(0, sp.y);
+                ctx.lineTo(w, sp.y);
+                ctx.stroke();
+            }
+
+            // ---- 坐标轴 ----
+            ctx.strokeStyle = '#2c3e50';
+            ctx.lineWidth = 1.8;
+            const origin = mathToScreen(0, 0);
+            ctx.beginPath();
+            ctx.moveTo(0, origin.y);
+            ctx.lineTo(w, origin.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(origin.x, 0);
+            ctx.lineTo(origin.x, h);
+            ctx.stroke();
+
+            ctx.fillStyle = '#2c3e50';
+            ctx.beginPath();
+            ctx.moveTo(w - 6, origin.y - 5);
+            ctx.lineTo(w, origin.y);
+            ctx.lineTo(w - 6, origin.y + 5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(origin.x - 5, 6);
+            ctx.lineTo(origin.x, 0);
+            ctx.lineTo(origin.x + 5, 6);
+            ctx.fill();
+
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText('x', w - 24, origin.y + 8);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('y', origin.x + 12, 10);
+
+            ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+            ctx.fillStyle = '#4a6a8a';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let v = Math.ceil(X_MIN / step) * step; v <= X_MAX; v += step) {
+                if (Math.abs(v) < 0.01) continue;
+                const sp = mathToScreen(v, 0);
+                ctx.fillText(v.toFixed(1), sp.x, origin.y + 6);
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let v = Math.ceil(Y_MIN / step) * step; v <= Y_MAX; v += step) {
+                if (Math.abs(v) < 0.01) continue;
+                const sp = mathToScreen(0, v);
+                ctx.fillText(v.toFixed(1), origin.x - 8, sp.y);
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#4a6a8a';
+            ctx.fillText('O', origin.x - 8, origin.y + 6);
+
+            // ---- 绘制曲线 y = x^2 ----
+            ctx.beginPath();
+            ctx.strokeStyle = '#2c6bdb';
+            ctx.lineWidth = 3.5;
+            const steps = 200;
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const mx = X_MIN + t * (X_MAX - X_MIN);
+                const my = f(mx);
+                const sp = mathToScreen(mx, my);
+                if (i === 0) ctx.moveTo(sp.x, sp.y);
+                else ctx.lineTo(sp.x, sp.y);
+            }
+            ctx.stroke();
+
+            // ---- 计算点坐标 ----
+            const pY = f(pX);
+            const qY = f(qX);
+            const pScreen = mathToScreen(pX, pY);
+            const qScreen = mathToScreen(qX, qY);
+
+            const dx = qX - pX;
+            const dy = qY - pY;
+            const secSlope = (Math.abs(dx) < 1e-9) ? Infinity : dy / dx;
+            const tanSlope = fPrime(pX);
+
+            // ---- 绘制割线 PQ ----
+            if (Math.abs(dx) > 1e-9) {
+                ctx.beginPath();
+                ctx.moveTo(pScreen.x, pScreen.y);
+                ctx.lineTo(qScreen.x, qScreen.y);
+                ctx.strokeStyle = '#e67e22';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // ---- 绘制切线在 P 点 ----
+            const xLeft = X_MIN;
+            const xRight = X_MAX;
+            const yLeft = tanSlope * (xLeft - pX) + pY;
+            const yRight = tanSlope * (xRight - pX) + pY;
+            const pLeft = mathToScreen(xLeft, yLeft);
+            const pRight = mathToScreen(xRight, yRight);
+            ctx.beginPath();
+            ctx.moveTo(pLeft.x, pLeft.y);
+            ctx.lineTo(pRight.x, pRight.y);
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // ---- 绘制斜率三角形 (割线) ----
+            if (Math.abs(dx) > 1e-9) {
+                const p3Math = { x: qX, y: pY };
+                const p3Screen = mathToScreen(p3Math.x, p3Math.y);
+                ctx.beginPath();
+                ctx.moveTo(pScreen.x, pScreen.y);
+                ctx.lineTo(qScreen.x, qScreen.y);
+                ctx.lineTo(p3Screen.x, p3Screen.y);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(230, 126, 34, 0.08)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(230, 126, 34, 0.25)';
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([3, 3]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const midX = (pScreen.x + p3Screen.x) / 2;
+                const labelY = pScreen.y + (pScreen.y < p3Screen.y ? 22 : -18);
+                ctx.fillStyle = '#c0392b';
+                ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`Δx = ${dx.toFixed(2)}`, midX, labelY);
+
+                const midY = (qScreen.y + p3Screen.y) / 2;
+                const labelX = qScreen.x + (qScreen.x < p3Screen.x ? 18 : -22);
+                ctx.fillStyle = '#27ae60';
+                ctx.fillText(`Δy = ${dy.toFixed(2)}`, labelX, midY);
+            }
+
+            // ---- 绘制点 P 和 Q (缩小尺寸) ----
+            drawPoint(pScreen.x, pScreen.y, '#2980b9', '#1a5276', true, 'P', 10);
+            drawPoint(qScreen.x, qScreen.y, '#e67e22', '#b85e0e', false, 'Q', 10);
+
+            // ---- 显示斜率值 on canvas ----
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.shadowColor = 'rgba(0,0,0,0.06)';
+            ctx.shadowBlur = 12;
+            const boxX = 20,
+                boxY = 20;
+            const textLines = [
+                `割线斜率 k_sec = ${isFinite(secSlope) ? secSlope.toFixed(4) : '∞'}`,
+                `切线斜率 k_tan = ${tanSlope.toFixed(4)}`,
+                `差值 = ${isFinite(secSlope) ? Math.abs(secSlope - tanSlope).toFixed(4) : '∞'}`
+            ];
+            const lineHeight = 24;
+            const pad = 14;
+            const tw = 220,
+                th = textLines.length * lineHeight + pad * 2;
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, tw, th, 14);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#1a2b4a';
+            ctx.font = '600 15px "Segoe UI", system-ui, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            textLines.forEach((line, idx) => {
+                const yPos = boxY + pad + idx * lineHeight + lineHeight / 2;
+                ctx.fillText(line, boxX + pad, yPos);
+            });
+
+            // ---- 更新信息面板 ----
+            updateInfo(dx, dy, secSlope, tanSlope);
+        }
+
+        // ---- 辅助: 绘制点 ----
+        function drawPoint(sx, sy, color, borderColor, isP, label, radius) {
+            const r = radius || 12;
+            const glow = r * 1.8;
+
+            const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, glow);
+            grad.addColorStop(0, color + '40');
+            grad.addColorStop(1, color + '00');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(sx, sy, glow, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.shadowColor = 'rgba(0,0,0,0.10)';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(sx, sy, r, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(sx - r * 0.25, sy - r * 0.25, r * 0.2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fill();
+
+            ctx.fillStyle = borderColor;
+            ctx.font = 'bold 15px "Segoe UI", system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const offsetY = isP ? -18 : 22;
+            ctx.fillText(label, sx, sy + offsetY);
+        }
+
+        // ---- roundRect polyfill ----
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (r > w / 2) r = w / 2;
+                if (r > h / 2) r = h / 2;
+                this.moveTo(x + r, y);
+                this.lineTo(x + w - r, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r);
+                this.lineTo(x + w, y + h - r);
+                this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                this.lineTo(x + r, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r);
+                this.lineTo(x, y + r);
+                this.quadraticCurveTo(x, y, x + r, y);
+                return this;
+            };
+        }
+
+        // ================================================================
+        //  4. 更新信息面板
+        // ================================================================
+        function updateInfo(dx, dy, secSlope, tanSlope) {
+            const pY = f(pX);
+            const qY = f(qX);
+            pCoordEl.textContent = `(${pX.toFixed(2)}, ${pY.toFixed(2)})`;
+            qCoordEl.textContent = `(${qX.toFixed(2)}, ${qY.toFixed(2)})`;
+            deltaXEl.textContent = dx.toFixed(2);
+            deltaYEl.textContent = dy.toFixed(2);
+            secSlopeEl.textContent = isFinite(secSlope) ? secSlope.toFixed(4) : '∞';
+            tanSlopeEl.textContent = tanSlope.toFixed(4);
+            const diff = isFinite(secSlope) ? Math.abs(secSlope - tanSlope) : Infinity;
+            diffSlopeEl.textContent = isFinite(diff) ? diff.toFixed(4) : '∞';
+        }
+
+        // ================================================================
+        //  5. 拖拽交互 (鼠标 + 触摸)
+        // ================================================================
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+            const clientY = e.clientY || e.touches?.[0]?.clientY || 0;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function hitTest(sx, sy) {
+            const pY = f(pX),
+                qY = f(qX);
+            const ps = mathToScreen(pX, pY);
+            const qs = mathToScreen(qX, qY);
+            const dP = Math.hypot(sx - ps.x, sy - ps.y);
+            const dQ = Math.hypot(sx - qs.x, sy - qs.y);
+            const threshold = 25;
+            if (dP < threshold && dP < dQ) return 'P';
+            if (dQ < threshold) return 'Q';
+            return null;
+        }
+
+        function onPointerDown(e) {
+            e.preventDefault();
+            const pos = getEventPos(e);
+            const hit = hitTest(pos.x, pos.y);
+            if (hit) {
+                dragging = hit;
+                const px = (hit === 'P') ? pX : qX;
+                const py = f(px);
+                const sp = mathToScreen(px, py);
+                dragOffsetX = pos.x - sp.x;
+                canvas.style.cursor = 'grabbing';
+                draw();
+            }
+        }
+
+        function onPointerMove(e) {
+            e.preventDefault();
+            const pos = getEventPos(e);
+            if (dragging) {
+                // 将屏幕坐标转换为数学坐标 (只取x)
+                const mathX = screenToMath(pos.x - dragOffsetX, 0).x;
+                // 限制范围
+                const clamped = Math.min(Math.max(mathX, X_MIN + 0.2), X_MAX - 0.2);
+                if (dragging === 'P') {
+                    pX = clamped;
+                } else {
+                    qX = clamped;
+                }
+                // 如果自动趋近在运行，停止它 (用户干预)
+                if (autoRunning) stopAuto();
+                draw();
+            } else {
+                // 更新光标
+                const hit = hitTest(pos.x, pos.y);
+                canvas.style.cursor = hit ? 'grab' : 'default';
+            }
+        }
+
+        function onPointerUp(e) {
+            if (dragging) {
+                dragging = null;
+                canvas.style.cursor = 'default';
+                draw();
+            }
+        }
+
+        // ---- 鼠标事件 ----
+        canvas.addEventListener('mousedown', onPointerDown);
+        window.addEventListener('mousemove', onPointerMove);
+        window.addEventListener('mouseup', onPointerUp);
+
+        // ---- 触摸事件 ----
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (touch) {
+                const me = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                });
+                canvas.dispatchEvent(me);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (touch) {
+                const me = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY,
+                });
+                window.dispatchEvent(me);
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const me = new MouseEvent('mouseup', {});
+            window.dispatchEvent(me);
+        }, { passive: false });
+
+        // ================================================================
+        //  6. 自动趋近动画
+        // ================================================================
+        function startAuto() {
+            if (autoRunning) return;
+            if (Math.abs(qX - pX) < 0.01) {
+                // 已经非常接近，重置一下距离
+                qX = pX + 0.5;
+                draw();
+            }
+            autoRunning = true;
+            autoBtn.textContent = '⏹ 停止';
+            autoBtn.classList.remove('primary');
+            autoBtn.style.background = '#e74c3c';
+            autoBtn.style.borderColor = '#e74c3c';
+
+            const targetX = pX + 0.01; // 无限接近但不等于
+            const step = 0.008;
+            let currentX = qX;
+
+            function stepAuto() {
+                if (!autoRunning) return;
+                const diff = currentX - targetX;
+                if (Math.abs(diff) < 0.002) {
+                    qX = targetX;
+                    draw();
+                    stopAuto();
+                    return;
+                }
+                const direction = diff > 0 ? -step : step;
+                currentX += direction;
+                if ((direction > 0 && currentX > targetX) || (direction < 0 && currentX < targetX)) {
+                    currentX = targetX;
+                }
+                qX = currentX;
+                draw();
+                autoAnimId = requestAnimationFrame(stepAuto);
+            }
+
+            autoAnimId = requestAnimationFrame(stepAuto);
+        }
+
+        function stopAuto() {
+            autoRunning = false;
+            if (autoAnimId) {
+                cancelAnimationFrame(autoAnimId);
+                autoAnimId = null;
+            }
+            autoBtn.textContent = '▶ 自动趋近';
+            autoBtn.classList.add('primary');
+            autoBtn.style.background = '';
+            autoBtn.style.borderColor = '';
+        }
+
+        autoBtn.addEventListener('click', () => {
+            if (autoRunning) {
+                stopAuto();
+            } else {
+                startAuto();
+            }
+        });
+
+        // ================================================================
+        //  7. 重置
+        // ================================================================
+        resetBtn.addEventListener('click', () => {
+            if (autoRunning) stopAuto();
+            pX = 1.0;
+            qX = 2.0;
+            draw();
+        });
+
+        // ================================================================
+        //  8. 窗口自适应
+        // ================================================================
+        function resizeCanvas() {
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // ================================================================
+        //  9. 初始化
+        // ================================================================
+        draw();
+        console.log('✅ 双点拖拽割线·切线交互已启动！');
+    </script>
+</body>
+</html>

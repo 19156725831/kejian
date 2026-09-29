@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物理课件</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+    background: #f6f8fa;
+    color: #24292f;
+  }
+
+  header {
+    padding: 20px 0 16px;
+    border-bottom: 1px solid #d0d7de;
+    margin-bottom: 8px;
+  }
+  h1 {
+    color: #0969da;
+    margin: 0 0 6px;
+    font-size: 28px;
+  }
+  .subtitle {
+    color: #57606a;
+    font-size: 14px;
+    margin: 0;
+  }
+
+  /* 顶部册导航 */
+  .nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 20px 0 4px;
+  }
+  .nav a {
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #d0d7de;
+    color: #0969da;
+    text-decoration: none;
+    transition: .15s;
+  }
+  .nav a:hover {
+    background: #0969da;
+    color: #fff;
+    border-color: #0969da;
+  }
+
+  /* 分组标题 */
+  .group-title {
+    font-size: 20px;
+    margin: 40px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #d0d7de;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    scroll-margin-top: 20px;
+  }
+  .group-title .count {
+    font-size: 13px;
+    color: #8c959f;
+    font-weight: 400;
+  }
+
+  /* 卡片网格 */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 16px;
+    text-decoration: none;
+    color: #0969da;
+    font-weight: 600;
+    transition: .2s;
+    display: block;
+    word-break: break-all;
+  }
+  .card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    transform: translateY(-2px);
+    border-color: #0969da;
+  }
+  .card .path {
+    display: block;
+    font-size: 12px;
+    color: #8c959f;
+    font-weight: 400;
+    margin-top: 6px;
+    word-break: break-all;
+  }
+
+  .empty {
+    color: #8c959f;
+    font-size: 14px;
+    padding: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>物理课件</h1>
+  <p class="subtitle">按册分类，点击卡片打开课件</p>
+</header>
+
+<nav class="nav" id="nav"></nav>
+
+<main id="app"></main>
+
+<script src="courses.js"></script>
+<script>
+  const app = document.getElementById('app');
+  const nav = document.getElementById('nav');
+
+  // 兼容旧格式 courseFiles
+  const groups = (typeof courseGroups !== 'undefined' && Array.isArray(courseGroups))
+    ? courseGroups
+    : (typeof courseFiles !== 'undefined' && Array.isArray(courseFiles))
+      ? [{ group: '全部课件', items: courseFiles }]
+      : [];
+
+  if (!groups.length) {
+    app.innerHTML = '<p class="empty">还没有课件，请先生成 courses.js。</p>';
+  }
+
+  groups.forEach((g, index) => {
+    if (!g.items || !g.items.length) return;
+
+    const id = 'group-' + index;
+
+    // 顶部导航
+    const navLink = document.createElement('a');
+    navLink.href = '#' + id;
+    navLink.textContent = `${g.group} (${g.items.length})`;
+    nav.appendChild(navLink);
+
+    // 分组标题
+    const title = document.createElement('h2');
+    title.className = 'group-title';
+    title.id = id;
+    title.innerHTML = `${g.group}<span class="count">${g.items.length} 个</span>`;
+    app.appendChild(title);
+
+    // 卡片网格
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    g.items.forEach(c => {
+      const a = document.createElement('a');
+      a.className = 'card';
+      a.href = encodeURI(c.path);
+      a.innerHTML = `${c.name}<span class="path">${c.path}</span>`;
+      grid.appendChild(a);
+    });
+
+    app.appendChild(grid);
+  });
+</script>
+
+</body>
+</html>
