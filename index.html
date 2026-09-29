@@ -179,20 +179,14 @@
     subtitle.textContent = `共 ${validGroups.length} 册 · ${total} 个课件`;
   }
 
-  /* ---------- 首页：只显示各册卡片 ---------- */
+  /* ---------- 首页：只显示各册卡片（不显示顶部导航） ---------- */
   function renderHome() {
-    nav.innerHTML = '';
+    nav.innerHTML = '';                 // 首页清空导航
     app.innerHTML = '';
 
     const wrap = el('div', 'grid fade');
 
     validGroups.forEach((g, i) => {
-      // 顶部导航
-      const navLink = el('a', null, `${g.group} (${g.items.length})`);
-      navLink.href = '#group-' + i;
-      nav.appendChild(navLink);
-
-      // 册卡片
       const card = el('a', 'card group-card');
       card.href = '#group-' + i;
       card.appendChild(el('span', null, g.group));
@@ -204,7 +198,7 @@
     window.scrollTo(0, 0);
   }
 
-  /* ---------- 分册页：显示该册的所有课件 ---------- */
+  /* ---------- 分册页：显示该册的所有课件（有顶部导航） ---------- */
   function renderGroup(index) {
     const g = validGroups[index];
     if (!g) { location.hash = ''; return; }
@@ -212,25 +206,22 @@
     nav.innerHTML = '';
     app.innerHTML = '';
 
-    // 顶部导航（当前册高亮）
+    // 顶部导航（只在分册页出现，当前册高亮）
     validGroups.forEach((gg, j) => {
       const navLink = el('a', j === index ? 'active' : null, `${gg.group} (${gg.items.length})`);
       navLink.href = '#group-' + j;
       nav.appendChild(navLink);
     });
 
-    // 返回首页
     const back = el('a', 'back', '← 返回首页');
     back.href = '#';
     app.appendChild(back);
 
-    // 标题
     const title = el('h2', 'group-title');
     title.appendChild(document.createTextNode(g.group));
     title.appendChild(el('span', 'count', `${g.items.length} 个`));
     app.appendChild(title);
 
-    // 课件卡片
     const grid = el('div', 'grid fade');
     g.items.forEach(c => {
       const a = el('a', 'card');
