@@ -23,5 +23,11 @@ const courseGroups = [
       { name: "追及", path: "必修一/追及.html" },
       { name: "aT²图像推导", path: "必修一/aT²图像推导.html" }
     ]
+  },
+  {
+    group: "必修二",
+    items: [
+      { name: "平抛运动", path: "必修二/平抛运动.html" }
+    ]
   }
 ];
