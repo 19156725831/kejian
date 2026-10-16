@@ -1,31 +1,22 @@
 const fs = require('fs');
 const path = require('path');
 
-// 忽略列表：不想展示的目录
 const ignoreList = ['.git', 'node_modules', '.github'];
 
-/**
- * 递归读取一级子文件夹（只取当前根目录下文件夹，不递归深层）
- */
-function scanRootDir(dir) {
-  const items = fs.readdirSync(dir, { withFileTypes: true });
-  const folders = [];
-  for (const item of items) {
-    if (!item.isDirectory()) continue;
-    if (ignoreList.includes(item.name)) continue;
-    folders.push(item.name);
-  }
-  // 文件夹名称排序
-  folders.sort();
-  return folders;
-}
+// 生成单目录的index.html
+function genIndexHtml(dirPath) {
+    const items = fs.readdirSync(dirPath, { withFileTypes: true });
+    const folders = [];
+    for (const item of items) {
+        if (!item.isDirectory()) continue;
+        if (ignoreList.includes(item.name)) continue;
+        folders.push(item.name);
+    }
+    folders.sort();
 
-function buildHtml(folderList) {
-  const items = folderList
-    .map(name => `<a href="${encodeURI(name)}/">${name}</a>`)
-    .join('\n');
-
-  return `<!DOCTYPE html>
+    // 生成html内容
+    const links = folders.map(name => `<a href="${encodeURI(name)}/">${name}</a>`).join('\n');
+    const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -49,14 +40,28 @@ a:hover{
 </head>
 <body>
 <div class="container">
-${items}
+${links}
 </div>
 </body>
 </html>`;
+    // 写入当前目录index.html
+    const outPath = path.join(dirPath, "index.html");
+    fs.writeFileSync(outPath, html, "utf8");
+    console.log(`生成: ${outPath}`);
 }
 
-// 主逻辑
-const folders = scanRootDir(__dirname);
-const html = buildHtml(folders);
-fs.writeFileSync('index.html', html, 'utf8');
-console.log('✅ index.html 已生成，共', folders.length, '个文件夹');
+// 递归遍历所有目录
+function walkDir(baseDir) {
+    genIndexHtml(baseDir);
+    const items = fs.readdirSync(baseDir, { withFileTypes: true });
+    for (const item of items) {
+        if (!item.isDirectory()) continue;
+        if (ignoreList.includes(item.name)) continue;
+        const subPath = path.join(baseDir, item.name);
+        walkDir(subPath);
+    }
+}
+
+// 从根目录开始扫描生成所有index.html
+walkDir(__dirname);
+console.log("\n✅ 全部目录 index.html 生成完毕");
