@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国外高中教研 AI 工具导航（2025-2026）</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2322304A'/%3E%3Cpath d='M12 8h8a3 3 0 0 1 3 3v13h-3V11h-5v10h-3z' fill='%23fff'/%3E%3Ccircle cx='16' cy='22' r='3.4' fill='%23F2B84B'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#22304A; --body:#334155; --muted:#64748B; --bg:#F4F7FB; --card:#fff; --line:#E3EAF2;
+    --blue:#2F6FED; --blue-bg:#EDF3FE; --blue-line:#D6E4FD;
+    --green:#12A150; --green-bg:#E9F8F0; --green-line:#CFEFDC;
+    --orange:#E08A2E; --orange-bg:#FDF3E7; --orange-line:#F7E0C4;
+    --teal:#0E9AA8; --teal-bg:#E4F6F8; --teal-line:#C5EAEE;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+    background:var(--bg);color:var(--body);line-height:1.6;font-size:15px;
+  }
+  ::selection{background:#D6E4FD;}
+
+  .hero{background:linear-gradient(180deg,#2A3B5C,#22304A);color:#fff;padding:36px 20px 30px;}
+  .hero-inner{max-width:980px;margin:0 auto;}
+  .hero h1{font-size:26px;font-weight:900;}
+  .hero h1 .accent{color:#F2B84B;}
+  .hero p{margin-top:8px;font-size:14px;color:#C3CDE2;}
+  .hero p b{color:#E8EDF7;}
+
+  .wrap{max-width:980px;margin:0 auto;padding:26px 20px 40px;}
+  .board{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:18px;}
+  .board h2{font-size:17px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .board h2 .no{color:#fff;font-size:12.5px;font-weight:900;width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;flex:none;}
+  .board .sub{font-size:13px;color:var(--muted);margin:0 0 14px 36px;}
+
+  .rows{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  a.row{
+    display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;
+    border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#FAFCFF;
+    transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+  }
+  a.row:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(34,48,74,.10);border-color:#C9D6E8;}
+  a.row .name{font-weight:700;color:var(--ink);font-size:14.5px;flex:none;}
+  a.row .tag{font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;flex:none;}
+  a.row .desc{font-size:13px;color:var(--body);flex:1;min-width:0;}
+  a.row .go{flex:none;font-size:13px;color:var(--muted);font-weight:700;opacity:0;transition:opacity .15s ease,transform .15s ease;}
+  a.row:hover .go{opacity:1;transform:translateX(2px);}
+
+  .board.blue h2 .no{background:var(--blue);} .board.blue a.row{border-color:var(--blue-line);} .board.blue a.row:hover{border-color:var(--blue);}
+  .board.blue .tag{color:var(--blue);background:var(--blue-bg);}
+  .board.green h2 .no{background:var(--green);} .board.green a.row{border-color:var(--green-line);} .board.green a.row:hover{border-color:var(--green);}
+  .board.green .tag{color:var(--green);background:var(--green-bg);}
+  .board.orange h2 .no{background:var(--orange);} .board.orange a.row{border-color:var(--orange-line);} .board.orange a.row:hover{border-color:var(--orange);}
+  .board.orange .tag{color:var(--orange);background:var(--orange-bg);}
+  .board.teal h2 .no{background:var(--teal);} .board.teal a.row{border-color:var(--teal-line);} .board.teal a.row:hover{border-color:var(--teal);}
+  .board.teal .tag{color:var(--teal);background:var(--teal-bg);}
+
+  .foot{font-size:12.5px;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;}
+  .foot b{color:var(--ink);}
+
+  @media (max-width:640px){
+    body{font-size:16px;}
+    .hero h1{font-size:21px;}
+    .rows{grid-template-columns:1fr;}
+    a.row{padding:12px 14px;}
+    a.row .desc{font-size:14px;}
+    a.row .go{opacity:1;}
+    .board .sub{margin-left:0;}
+  }
+  @media (prefers-reduced-motion:reduce){a.row{transition:none;}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <h1>国外高中教研 <span class="accent">AI 工具导航</span></h1>
+    <p><b>点击工具名直接访问官网</b>；说明与侧重点均为一句话速览（2025-2026）。</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="board blue">
+    <h2><span class="no">1</span>论文 · 课题 · 项目写作</h2>
+    <div class="sub">文字产出：选题、初稿、文献综述、润色翻译</div>
+    <div class="rows">
+      <a class="row" href="https://chatgpt.com" target="_blank" rel="noopener">
+        <span class="name">ChatGPT</span><span class="tag">最常用</span>
+        <span class="desc">通用写作主力：选题、大纲、初稿、改稿</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://claude.ai" target="_blank" rel="noopener">
+        <span class="name">Claude</span><span class="tag">长文/结构化</span>
+        <span class="desc">长文档、课题申报书等结构化方案更严谨</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://gemini.google.com" target="_blank" rel="noopener">
+        <span class="name">Gemini</span><span class="tag">日常初稿</span>
+        <span class="desc">免费额度大，适合日常初稿和反复试写</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://jenni.ai" target="_blank" rel="noopener">
+        <span class="name">Jenni AI</span><span class="tag">论文写作专用</span>
+        <span class="desc">自动补全、按引用写作，文献综述省力</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://scispace.com" target="_blank" rel="noopener">
+        <span class="name">SciSpace</span><span class="tag">文献调研</span>
+        <span class="desc">对话 2.8 亿+ 论文，综述与续写</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://elicit.com" target="_blank" rel="noopener">
+        <span class="name">Elicit</span><span class="tag">文献调研</span>
+        <span class="desc">1.25 亿+ 文献的证据综合</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://consensus.app" target="_blank" rel="noopener">
+        <span class="name">Consensus</span><span class="tag">文献调研</span>
+        <span class="desc">2 亿+ 论文的共识摘要</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.grammarly.com" target="_blank" rel="noopener">
+        <span class="name">Grammarly</span><span class="tag">后期润色</span>
+        <span class="desc">英文润色，成稿统一收尾</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.deepl.com" target="_blank" rel="noopener">
+        <span class="name">DeepL</span><span class="tag">后期润色</span>
+        <span class="desc">学术翻译，准确性高</span><span class="go">访问 →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="board green">
+    <h2><span class="no">2</span>教学课件 / 幻灯片制作</h2>
+    <div class="sub">比赛课、公开课：快速出片、美观、可继续编辑</div>
+    <div class="rows">
+      <a class="row" href="https://gamma.app" target="_blank" rel="noopener">
+        <span class="name">Gamma</span><span class="tag">课件速度王</span>
+        <span class="desc">输入主题约 1 分钟生成整套幻灯片</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.canva.com" target="_blank" rel="noopener">
+        <span class="name">Canva Magic Design</span><span class="tag">教师装机量大</span>
+        <span class="desc">教育版免费，可导出 PPTX 继续编辑</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://slides.google.com" target="_blank" rel="noopener">
+        <span class="name">Google Slides + Gemini</span><span class="tag">与现有工具集成</span>
+        <span class="desc">Google 生态内直接 AI 生成页面</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://curipod.com" target="_blank" rel="noopener">
+        <span class="name">Curipod</span><span class="tag">课堂互动专用</span>
+        <span class="desc">互动课件：投票、词云、出门票</span><span class="go">访问 →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="board orange">
+    <h2><span class="no">3</span>备课 · 教案 · 试题</h2>
+    <div class="sub">教师日常工作流：教案、单元计划、差异化材料</div>
+    <div class="rows">
+      <a class="row" href="https://www.magicschool.ai" target="_blank" rel="noopener">
+        <span class="name">MagicSchool AI</span><span class="tag">最主流 · 200万+教师</span>
+        <span class="desc">70+ 教师工具：教案、试题、评价量规</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.briskteaching.com" target="_blank" rel="noopener">
+        <span class="name">Brisk Teaching</span><span class="tag">约1/5美K-12教师</span>
+        <span class="desc">Chrome 扩展，在 Google 文档里直接改</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.diffit.me" target="_blank" rel="noopener">
+        <span class="name">Diffit</span><span class="tag">差异化教学</span>
+        <span class="desc">同一内容改编成不同难度 / 语言</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.eduaide.ai" target="_blank" rel="noopener">
+        <span class="name">Eduaide.AI</span><span class="tag">资源类型全</span>
+        <span class="desc">110+ 资源类型：讲义、练习、评估</span><span class="go">访问 →</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="board teal">
+    <h2><span class="no">4</span>理科学习 · 跨学科项目</h2>
+    <div class="sub">数理化生地：讲解引导、计算推导、拍照答疑、项目设计</div>
+    <div class="rows">
+      <a class="row" href="https://www.khanmigo.ai" target="_blank" rel="noopener">
+        <span class="name">Khanmigo</span><span class="tag">约200万用户</span>
+        <span class="desc">苏格拉底式引导，覆盖数理化生多学科</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://photomath.com" target="_blank" rel="noopener">
+        <span class="name">Photomath</span><span class="tag">数学答疑常用</span>
+        <span class="desc">拍照解数学计算题，秒出步骤</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://www.wolframalpha.com" target="_blank" rel="noopener">
+        <span class="name">Wolfram Alpha</span><span class="tag">理科计算标准</span>
+        <span class="desc">数理计算与分步推导，教研硬工具</span><span class="go">访问 →</span>
+      </a>
+      <a class="row" href="https://chatgpt.com" target="_blank" rel="noopener">
+        <span class="name">ChatGPT / Claude</span><span class="tag">跨学科设计主力</span>
+        <span class="desc">跨学科项目设计：主题整合、任务拆解（亦可访问 claude.ai）</span><span class="go">访问 →</span>
+      </a>
+    </div>
+  </section>
+
+  <div class="foot">
+    <b>说明：</b>多数工具国内直连受限，需科学上网与海外账号；免费额度通常够用。数字来自公开报道（2025-2026），为平台方 / 媒体口径。
+  </div>
+</main>
+
+</body>
+</html>
