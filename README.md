@@ -1,0 +1,2 @@
+- [PhET中文主页](https://phet.colorado.edu/zh_CN/)
+- [physicstjc物理仿真合集主页](https://physicstjc.github.io/sls/simulations/index.html)
