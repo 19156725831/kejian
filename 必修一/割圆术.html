@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1220">
+<title>割圆术求圆周率</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;}
+  html,body{width:100%;height:100%;overflow:hidden;}
+  body{
+    background-color:#0a1220;
+    background-image:radial-gradient(circle at 28% 0%,#16294a 0%,#0a1220 55%,#070d17 100%);
+    color:#e8f1ff;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+    -webkit-user-select:none;user-select:none;
+    -webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;gap:8px;
+    padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));
+  }
+
+  .header{
+    flex:0 0 auto;text-align:center;
+    font-size:14px;font-weight:700;
+    color:#8fc9ff;letter-spacing:.5px;
+    padding:2px 0;
+  }
+  .header span{color:#ffb84a;}
+  .header em{color:#54d2ff;font-style:normal;}
+
+  .main{
+    flex:1 1 auto;min-height:0;min-width:0;
+    display:flex;gap:8px;
+  }
+
+  /* ---------- 左侧：图形 ---------- */
+  .left{
+    flex:0 0 50%;min-width:0;min-height:0;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .chart-box{
+    flex:1 1 auto;min-height:0;position:relative;
+    border-radius:15px;
+    background:rgba(12,22,40,0.80);
+    border:1px solid rgba(90,140,210,0.18);
+    box-shadow:0 8px 26px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.04);
+    overflow:hidden;
+  }
+  #cv{position:absolute;left:0;top:0;width:100%;height:100%;display:block;}
+
+  .slider-card{
+    flex:0 0 auto;
+    background:rgba(20,34,58,0.75);
+    border:1px solid rgba(80,130,200,0.16);
+    border-radius:13px;
+    padding:8px 12px 2px;
+  }
+  .slider-top{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:13px;color:#8fb0d8;letter-spacing:.3px;gap:4px;
+  }
+  .slider-top b{
+    color:#54d2ff;font-size:22px;font-weight:800;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",sans-serif;
+  }
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:32px;background:transparent;outline:none;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg,#2f6fb5,#54d2ff);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:24px;height:24px;border-radius:50%;
+    background:#eaf6ff;border:3px solid #54d2ff;
+    margin-top:-9px;
+    box-shadow:0 2px 10px rgba(84,210,255,0.65);
+  }
+  input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:#2f6fb5;}
+  input[type=range]::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;
+    background:#eaf6ff;border:3px solid #54d2ff;
+  }
+
+  /* 开关行 */
+  .switch-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:2px 2px 6px;
+  }
+  .switch-row span{font-size:12.5px;color:#8fb0d8;letter-spacing:.3px;}
+  .switch{
+    position:relative;display:inline-block;
+    width:44px;height:24px;flex:none;
+  }
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .track{
+    position:absolute;inset:0;
+    background:rgba(90,140,210,0.25);
+    border-radius:12px;
+    transition:background .18s;
+  }
+  .switch .track::before{
+    content:"";position:absolute;
+    width:18px;height:18px;left:3px;top:3px;
+    background:#8fb0d8;border-radius:50%;
+    transition:transform .18s,background .18s;
+  }
+  .switch input:checked + .track{background:rgba(84,210,255,0.45);}
+  .switch input:checked + .track::before{
+    transform:translateX(20px);background:#eaf6ff;
+  }
+
+  /* ---------- 右侧：数据 ---------- */
+  .right{
+    flex:1 1 auto;min-width:0;min-height:0;
+    display:flex;flex-direction:column;gap:8px;
+  }
+
+  .card{
+    background:rgba(20,34,58,0.75);
+    border:1px solid rgba(80,130,200,0.16);
+    border-radius:13px;
+    padding:11px 13px;
+    min-width:0;
+  }
+  .card-hd{
+    display:flex;align-items:center;gap:7px;
+    font-size:15px;font-weight:700;letter-spacing:.3px;
+    margin-bottom:8px;line-height:1.3;
+  }
+  .card-hd .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+
+  .eq{
+    font-size:15px;line-height:1.85;color:#b3cee8;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",-apple-system,sans-serif;
+    letter-spacing:.2px;
+    overflow-wrap:anywhere;word-break:break-word;
+  }
+  .eq .k{color:#ffb84a;font-weight:800;}
+  .eq .b{color:#54d2ff;font-weight:800;}
+  .eq .g{color:#7fe0a8;font-weight:800;}
+  .eq .r{color:#ff7b8a;font-weight:800;}
+  .eq.note{color:#8fb0d8;font-size:13px;line-height:1.7;}
+  .eq.res{
+    margin-top:6px;padding-top:6px;
+    border-top:1px dashed rgba(90,140,210,0.28);
+    font-size:17px;font-weight:700;
+  }
+  .eq.res .val{font-size:26px;}
+
+  .pi-card{flex:0 0 auto;}
+  .pi-card .big{
+    text-align:center;
+    font-size:34px;font-weight:800;
+    color:#54d2ff;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",sans-serif;
+    letter-spacing:1px;
+    margin:4px 0 2px;
+    text-shadow:0 0 22px rgba(84,210,255,0.35);
+  }
+  .pi-card .sub{
+    text-align:center;
+    font-size:12px;color:#8fb0d8;
+    letter-spacing:.3px;
+  }
+
+  .err-card{flex:0 0 auto;}
+
+  .hist-card{
+    flex:1 1 auto;min-height:0;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .hist-list{
+    flex:1 1 auto;min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    margin-top:2px;
+  }
+  .hist-list::-webkit-scrollbar{width:3px;}
+  .hist-list::-webkit-scrollbar-thumb{background:rgba(90,140,210,0.4);border-radius:3px;}
+
+  .hist-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12.5px;
+    line-height:1.9;
+    color:#b3cee8;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",-apple-system,sans-serif;
+    border-bottom:1px dashed rgba(90,140,210,0.12);
+    padding:1px 0;
+  }
+  .hist-row .n{color:#8fb0d8;}
+  .hist-row .v{color:#ffd98a;font-weight:700;}
+  .hist-row .e{color:#ff7b8a;font-size:11px;}
+
+  .foot-tip{
+    flex:0 0 auto;
+    font-size:11px;color:#4e6a8e;
+    text-align:center;letter-spacing:.3px;
+    padding:0 0 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  割圆术：用<span>正多边形</span>逼近圆，求<em>圆周率 π</em>
+</div>
+
+<div class="main">
+
+  <!-- ============ 左：图形 ============ -->
+  <div class="left">
+    <div class="chart-box" id="chartBox">
+      <canvas id="cv"></canvas>
+    </div>
+
+    <div class="slider-card">
+      <div class="slider-top">
+        <span>正多边形边数 n</span>
+        <b id="nVal">6</b>
+      </div>
+      <input type="range" id="slider" min="3" max="192" value="6" step="1">
+
+      <div class="switch-row">
+        <span>显示中心连线</span>
+        <label class="switch">
+          <input type="checkbox" id="swRadius" checked>
+          <span class="track"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 右：数据 ============ -->
+  <div class="right">
+
+    <div class="card pi-card">
+      <div class="card-hd">
+        <span class="dot" style="background:#54d2ff"></span>
+        π 的近似值
+      </div>
+      <div class="big" id="piVal">3.000000</div>
+      <div class="sub" id="piSub">正 6 边形：π ≈ 3.000000</div>
+    </div>
+
+    <div class="card err-card">
+      <div class="card-hd">
+        <span class="dot" style="background:#ff7b8a"></span>
+        误差
+      </div>
+      <div class="eq note" style="margin:0 0 4px">真实值 π ≈ 3.1415926535…</div>
+      <div class="eq" id="errLine">绝对误差 = 0.141593</div>
+      <div class="eq res" id="errRes">相对误差 = <span class="val r" id="errRel">4.51</span> %</div>
+    </div>
+
+    <div class="card hist-card">
+      <div class="card-hd">
+        <span class="dot" style="background:#ffb84a"></span>
+        历代割圆术记录
+      </div>
+      <div class="hist-list" id="histList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="foot-tip">拖动滑块改变边数，看 π 如何越来越精确</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var chartBox = document.getElementById('chartBox');
+  var slider = document.getElementById('slider');
+  var swRadius = document.getElementById('swRadius');
+
+  var W = 0, H = 0, dpr = 1;
+  var cx = 0, cy = 0, R = 0;
+
+  var TRUE_PI = Math.PI;
+  var n = 6;
+  var showRadius = true;
+
+  /* ================= 计算 ================= */
+  function piApprox(nn) {
+    return nn * Math.sin(Math.PI / nn);
+  }
+
+  function fmt(x, d) {
+    if (d === undefined) d = 6;
+    return Number(x).toFixed(d);
+  }
+
+  /* ================= 尺寸 ================= */
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var rect = chartBox.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    if (!W || !H) return;
+
+    cv.width = Math.round(W * dpr);
+    cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    cx = W / 2;
+    cy = H / 2;
+    R = Math.min(W * 0.40, H * 0.40);
+
+    draw();
+  }
+
+  /* ================= 绘制 ================= */
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // 圆
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(90,140,210,0.55)';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    var start = -Math.PI / 2;
+
+    // ===== 中心连线（半径）=====
+    if (showRadius) {
+      // 边数越多，连线越淡，避免糊成一团
+      var alpha = 0.32;
+      if (n > 12)  alpha = 0.26;
+      if (n > 24)  alpha = 0.20;
+      if (n > 48)  alpha = 0.14;
+      if (n > 96)  alpha = 0.09;
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(84,210,255,' + alpha + ')';
+      ctx.lineWidth = (n <= 24) ? 1.2 : 0.8;
+      ctx.beginPath();
+      for (var k = 0; k < n; k++) {
+        var ak = start + (k / n) * Math.PI * 2;
+        var rx = cx + R * Math.cos(ak);
+        var ry = cy + R * Math.sin(ak);
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(rx, ry);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ===== 正 n 边形 =====
+    ctx.beginPath();
+    for (var i = 0; i <= n; i++) {
+      var a = start + (i / n) * Math.PI * 2;
+      var px = cx + R * Math.cos(a);
+      var py = cy + R * Math.sin(a);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = '#ffb84a';
+    ctx.lineWidth = 2.2;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(255,184,74,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // ===== 顶点 =====
+    if (n <= 48) {
+      for (var j = 0; j < n; j++) {
+        var aj = start + (j / n) * Math.PI * 2;
+        var vx = cx + R * Math.cos(aj);
+        var vy = cy + R * Math.sin(aj);
+        ctx.beginPath();
+        ctx.arc(vx, vy, n <= 12 ? 4 : 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffd98a';
+        ctx.fill();
+      }
+    }
+
+    // ===== 圆心 =====
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#54d2ff';
+    ctx.fill();
+
+    // 半径标注（仅显示连线且 n 不太大时）
+    if (showRadius && n <= 24) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + R * Math.cos(start), cy + R * Math.sin(start));
+      ctx.strokeStyle = 'rgba(84,210,255,0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(84,210,255,0.95)';
+      ctx.font = 'bold 12px -apple-system,BlinkMacSystemFont,sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      var lx = cx + R * 0.5 * Math.cos(start);
+      var ly = cy + R * 0.5 * Math.sin(start);
+      ctx.fillText('r', lx + 4, ly);
+    }
+
+    // 图形下方标注
+    ctx.fillStyle = 'rgba(143,201,255,0.8)';
+    ctx.font = 'bold 13px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('圆内接正 ' + n + ' 边形', cx, cy + R + 22);
+
+    // 说明
+    var side = 2 * R * Math.sin(Math.PI / n);
+    ctx.fillStyle = 'rgba(143,201,255,0.6)';
+    ctx.font = '11px -apple-system,BlinkMacSystemFont,sans-serif';
+    if (showRadius) {
+      ctx.fillText('n 个等腰三角形 · 边长 a = 2r·sin(π/n)', cx, cy + R + 42);
+    } else {
+      ctx.fillText('边长 a = 2r·sin(π/n)', cx, cy + R + 42);
+    }
+  }
+
+  /* ================= 更新数据 ================= */
+  function updateInfo() {
+    var pi = piApprox(n);
+    var err = Math.abs(pi - TRUE_PI);
+    var rel = err / TRUE_PI * 100;
+
+    document.getElementById('nVal').textContent = n;
+    document.getElementById('piVal').textContent = fmt(pi, 6);
+    document.getElementById('piSub').textContent =
+      '正 ' + n + ' 边形：π ≈ ' + fmt(pi, 6);
+
+    document.getElementById('errLine').innerHTML =
+      '绝对误差 = ' + fmt(err, 6);
+    document.getElementById('errRel').textContent = fmt(rel, 4);
+
+    // 历代记录
+    var records = [
+      { n: 6 },
+      { n: 12 },
+      { n: 24 },
+      { n: 48 },
+      { n: 96 },
+      { n: 192 },
+      { n: 3072 }
+    ];
+
+    var html = '';
+    for (var i = 0; i < records.length; i++) {
+      var r = records[i];
+      var p = piApprox(r.n);
+      var e = Math.abs(p - TRUE_PI);
+
+      html += '<div class="hist-row">'
+           +  '<span class="n">n=' + r.n + '</span>'
+           +  '<span class="v">' + fmt(p, 6) + '</span>'
+           +  '<span class="e">误差 ' + fmt(e, 5) + '</span>'
+           +  '</div>';
+    }
+    document.getElementById('histList').innerHTML = html;
+
+    draw();
+  }
+
+  /* ================= 交互 ================= */
+  slider.addEventListener('input', function () {
+    n = parseInt(slider.value, 10) || 3;
+    updateInfo();
+  }, false);
+
+  swRadius.addEventListener('change', function () {
+    showRadius = swRadius.checked;
+    draw();
+  }, false);
+
+  /* ================= 启动 ================= */
+  window.addEventListener('load', function () {
+    resize();
+    updateInfo();
+  }, false);
+
+  window.addEventListener('orientationchange', function () {
+    setTimeout(function () { resize(); updateInfo(); }, 220);
+    setTimeout(function () { resize(); updateInfo(); }, 520);
+  }, false);
+
+  var rzTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(function () { resize(); updateInfo(); }, 100);
+  }, false);
+
+  if (window.ResizeObserver) {
+    try {
+      new ResizeObserver(function () { resize(); updateInfo(); })
+        .observe(chartBox);
+    } catch (e) {}
+  }
+
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); }, false);
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, false);
+
+  // 初始化
+  n = parseInt(slider.value, 10) || 6;
+  showRadius = swRadius.checked;
+  resize();
+  updateInfo();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🚗 小车物理模拟器 · 大范围力</title>
+    <style>
+        /* 样式与之前相同，仅调整滑块背景渐变以适应新范围 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Helvetica Neue', sans-serif;
+            background: #eef2f7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+            padding: 30px 32px 38px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a202c;
+            letter-spacing: 0.5px;
+        }
+        .header .badge {
+            background: #ebf4ff;
+            color: #2b6cb0;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .header .sub {
+            color: #4a5568;
+            font-size: 15px;
+            margin-left: auto;
+            opacity: 0.75;
+        }
+        .canvas-wrapper {
+            background: #f7fafc;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            margin-bottom: 22px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #f7fafc;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px 16px;
+            background: #f7fafc;
+            border-radius: 16px;
+            padding: 14px 20px;
+            margin-bottom: 22px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-item .label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .stat-item .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-top: 2px;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-item .value .unit {
+            font-size: 14px;
+            font-weight: 400;
+            color: #718096;
+            margin-left: 4px;
+        }
+        .stat-item .value.highlight-blue { color: #2b6cb0; }
+        .stat-item .value.highlight-orange { color: #c05621; }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 14px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        .status-badge.idle { background: #e2e8f0; color: #4a5568; }
+        .status-badge.running { background: #c6f6d5; color: #276749; }
+        .status-badge.accelerating { background: #fefcbf; color: #975a16; }
+        .status-badge.decelerating { background: #fed7d7; color: #9b2c2c; }
+        .status-badge.paused { background: #bee3f8; color: #2a69ac; }
+        .status-badge.boundary { background: #e9d8fd; color: #553c9a; }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .control-row .ctrl-label {
+            min-width: 72px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 15px;
+        }
+        .control-row .ctrl-label .icon { margin-right: 6px; }
+        .control-row input[type="range"] {
+            flex: 1;
+            min-width: 140px;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e2e8f0;
+            border-radius: 10px;
+            outline: none;
+        }
+        .control-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3182ce;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(49, 130, 206, 0.3);
+        }
+        .control-row input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.12);
+            background: #2b6cb0;
+        }
+        .control-row .value-display {
+            min-width: 68px;
+            font-weight: 700;
+            font-size: 17px;
+            color: #1a202c;
+            text-align: right;
+        }
+        .control-row .value-display .u {
+            font-weight: 400;
+            font-size: 13px;
+            color: #718096;
+            margin-left: 2px;
+        }
+        /* 调整滑块渐变背景 */
+        .control-row.pull input[type="range"] { background: linear-gradient(to right, #feb2b2, #e53e3e); }
+        .control-row.friction input[type="range"] { background: linear-gradient(to right, #fbd38d, #dd6b20); }
+        .control-row.mass input[type="range"] { background: linear-gradient(to right, #9ae6b4, #38a169); }
+        .control-row.initial-speed input[type="range"] { background: linear-gradient(to right, #b794f4, #6b46c1); }
+
+        .actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 4px;
+        }
+        .btn {
+            padding: 10px 32px;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            background: #edf2f7;
+            color: #2d3748;
+            cursor: pointer;
+            transition: 0.18s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            user-select: none;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); }
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-primary { background: #3182ce; color: #ffffff; }
+        .btn-primary:hover:not(:disabled) { background: #2b6cb0; }
+        .btn-success { background: #38a169; color: #ffffff; }
+        .btn-success:hover:not(:disabled) { background: #2f855a; }
+        .btn-warning { background: #dd6b20; color: #ffffff; }
+        .btn-warning:hover:not(:disabled) { background: #c05621; }
+
+        .footer-tip {
+            margin-top: 18px;
+            font-size: 13px;
+            color: #a0aec0;
+            text-align: center;
+            border-top: 1px solid #edf2f7;
+            padding-top: 16px;
+        }
+        @media (max-width: 640px) {
+            .container { padding: 16px; }
+            .header h1 { font-size: 20px; }
+            .stats { grid-template-columns: repeat(3, 1fr); padding: 12px 14px; gap: 6px 10px; }
+            .stat-item .value { font-size: 17px; }
+            .control-row .ctrl-label { min-width: 56px; font-size: 14px; }
+            .control-row input[type="range"] { min-width: 80px; }
+            .btn { padding: 8px 20px; font-size: 14px; }
+        }
+        @media (max-width: 420px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 小车物理模拟器</h1>
+            <span class="badge">拉力 0~100 N · 摩擦力 0~50 N</span>
+            <span class="sub">单向运动 · 速度非负</span>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="940" height="300"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="label">📐 速度</span>
+                <span class="value highlight-blue" id="dispSpeed">0.00 <span class="unit">m/s</span></span>
+            </div>
+            <div class="stat-item">
+                <span class="label">⚡ 加速度</span>
+                <span class="value" id="dispAccel">0.00 <span class="unit">m/s²</span></span>
+            </div>
+            <div class="stat-item">
+                <span class="label">📏 位移</span>
+                <span class="value" id="dispPos">0.00 <span class="unit">m</span></span>
+            </div>
+            <div class="stat-item">
+                <span class="label">🔗 合力</span>
+                <span class="value highlight-orange" id="dispNetForce">0.00 <span class="unit">N</span></span>
+            </div>
+            <div class="stat-item">
+                <span class="label">🚦 状态</span>
+                <span class="status-badge idle" id="dispStatus">⏸ 待启动</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row pull">
+                <span class="ctrl-label"><span class="icon">🔴</span>拉力</span>
+                <input type="range" id="sliderPull" min="0" max="100" step="0.5" value="20" />
+                <span class="value-display" id="valPull">20.0 <span class="u">N</span></span>
+            </div>
+            <div class="control-row friction">
+                <span class="ctrl-label"><span class="icon">🟠</span>摩擦力</span>
+                <input type="range" id="sliderFriction" min="0" max="50" step="0.5" value="10" />
+                <span class="value-display" id="valFriction">10.0 <span class="u">N</span></span>
+            </div>
+            <div class="control-row mass">
+                <span class="ctrl-label"><span class="icon">⚖️</span>质量</span>
+                <input type="range" id="sliderMass" min="0.5" max="10" step="0.1" value="2.0" />
+                <span class="value-display" id="valMass">2.0 <span class="u">kg</span></span>
+            </div>
+            <div class="control-row initial-speed">
+                <span class="ctrl-label"><span class="icon">🚀</span>初速度</span>
+                <input type="range" id="sliderInitSpeed" min="0" max="5" step="0.1" value="0.0" />
+                <span class="value-display" id="valInitSpeed">0.0 <span class="u">m/s</span></span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="btnReset">🔄 重置</button>
+            <button class="btn btn-success" id="btnStart">▶ 启动</button>
+            <button class="btn btn-warning" id="btnPause" disabled>⏸ 暂停</button>
+        </div>
+
+        <div class="footer-tip">
+            <span>💡</span> 调节参数，点击「启动」小车以正向初速度出发 · 速度始终 ≥ 0，小车只向右运动
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  物理模拟器 — 大范围力，速度非负，单向运动
+        // ============================================================
+
+        // DOM 引用
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const sliderPull = document.getElementById('sliderPull');
+        const sliderFriction = document.getElementById('sliderFriction');
+        const sliderMass = document.getElementById('sliderMass');
+        const sliderInitSpeed = document.getElementById('sliderInitSpeed');
+
+        const valPull = document.getElementById('valPull');
+        const valFriction = document.getElementById('valFriction');
+        const valMass = document.getElementById('valMass');
+        const valInitSpeed = document.getElementById('valInitSpeed');
+
+        const dispSpeed = document.getElementById('dispSpeed');
+        const dispAccel = document.getElementById('dispAccel');
+        const dispPos = document.getElementById('dispPos');
+        const dispNetForce = document.getElementById('dispNetForce');
+        const dispStatus = document.getElementById('dispStatus');
+
+        const btnReset = document.getElementById('btnReset');
+        const btnStart = document.getElementById('btnStart');
+        const btnPause = document.getElementById('btnPause');
+
+        // 物理参数
+        let pullForce = 20.0;   // 默认20N
+        let frictionForce = 10.0; // 默认10N
+        let mass = 2.0;
+        let initialSpeed = 0.0;
+
+        // 状态变量
+        let pos = 0;
+        let speed = 0;
+        let accel = 0;
+        let netForce = 0;
+        let statusText = '⏸ 待启动';
+        let statusClass = 'idle';
+
+        const STATE = { IDLE: 'idle', RUNNING: 'running', PAUSED: 'paused' };
+        let simState = STATE.IDLE;
+
+        let lastTimestamp = 0;
+        let animId = null;
+
+        // Canvas 物理映射
+        const CANVAS_W = 940, CANVAS_H = 300;
+        const PHYSICS_MAX = 12;
+        const PIXEL_PER_METER = 68;
+        const CAR_WIDTH = 78, CAR_HEIGHT = 40, WHEEL_RADIUS = 11;
+        const GROUND_Y = 238, CAR_BASE_Y = GROUND_Y - CAR_HEIGHT + 4;
+        const START_PIXEL_X = 110, MAX_PIXEL_X = CANVAS_W - 60;
+
+        // ---- 力的箭头绘制比例 (动态调整) ----
+        function getForceScale() {
+            // 根据当前最大力动态计算比例，使箭头最长不超过150px
+            const maxForce = Math.max(pullForce, frictionForce, 1);
+            const desiredMaxLen = 150;
+            let scale = desiredMaxLen / maxForce;
+            // 限制最小比例，避免力很小时箭头太短
+            if (scale < 1.0) scale = 1.0;
+            if (scale > 8.0) scale = 8.0; // 上限
+            return scale;
+        }
+
+        // ---- 物理更新 ----
+        function updatePhysics(dt) {
+            if (simState !== STATE.RUNNING) return;
+            dt = Math.min(dt, 0.032);
+
+            const F_pull = pullForce;
+            const F_fric = frictionForce;
+            const m = mass;
+
+            const isMoving = speed > 0.0005;
+
+            if (isMoving) {
+                netForce = F_pull - F_fric;
+            } else {
+                if (F_pull > F_fric) {
+                    netForce = F_pull - F_fric;
+                } else {
+                    netForce = 0;
+                }
+            }
+
+            accel = (m > 0) ? netForce / m : 0;
+
+            if (isMoving || netForce > 0) {
+                speed += accel * dt;
+                if (speed < 0) speed = 0;
+            } else {
+                speed = 0;
+                accel = 0;
+            }
+
+            pos += speed * dt;
+            if (pos > PHYSICS_MAX) {
+                pos = PHYSICS_MAX;
+                speed = 0;
+                accel = 0;
+                netForce = 0;
+            }
+            if (pos < 0) pos = 0;
+
+            if (Math.abs(speed) < 1e-10) speed = 0;
+            if (Math.abs(accel) < 1e-10) accel = 0;
+            if (Math.abs(netForce) < 1e-10) netForce = 0;
+
+            updateStatusText();
+        }
+
+        function updateStatusText() {
+            if (simState === STATE.IDLE) {
+                statusText = '⏸ 待启动';
+                statusClass = 'idle';
+                return;
+            }
+            if (simState === STATE.PAUSED) {
+                statusText = '⏸ 已暂停';
+                statusClass = 'paused';
+                return;
+            }
+            const isMoving = speed > 0.005;
+            const atBoundary = pos >= PHYSICS_MAX;
+
+            if (atBoundary && isMoving) {
+                statusText = '🚧 到达边界';
+                statusClass = 'boundary';
+            } else if (!isMoving) {
+                if (pullForce > frictionForce && netForce > 0.01) {
+                    statusText = '⏳ 即将启动';
+                    statusClass = 'accelerating';
+                } else {
+                    statusText = '● 静止';
+                    statusClass = 'idle';
+                }
+            } else {
+                if (accel > 0.01) {
+                    statusText = '🚀 加速中';
+                    statusClass = 'accelerating';
+                } else if (accel < -0.01) {
+                    statusText = '🔻 减速中';
+                    statusClass = 'decelerating';
+                } else {
+                    statusText = '➡️ 匀速';
+                    statusClass = 'running';
+                }
+            }
+            if (pos >= PHYSICS_MAX && !isMoving) {
+                statusText = '🚧 到达边界';
+                statusClass = 'boundary';
+            }
+            if (!isMoving && Math.abs(pullForce - frictionForce) < 0.01 && pullForce > 0.01) {
+                statusText = '⚖️ 平衡静止';
+                statusClass = 'idle';
+            }
+        }
+
+        // ---- 绘图 ----
+        function drawScene() {
+            ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+            // 背景
+            const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+            grad.addColorStop(0, '#e8edf5');
+            grad.addColorStop(1, '#d5dde8');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+            // 地面
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(CANVAS_W, GROUND_Y);
+            ctx.strokeStyle = '#4a5568';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // 刻度
+            for (let x = 0; x <= CANVAS_W; x += 60) {
+                ctx.beginPath();
+                ctx.moveTo(x, GROUND_Y);
+                ctx.lineTo(x, GROUND_Y + 10);
+                ctx.strokeStyle = '#718096';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+                if (x % 120 === 0) {
+                    ctx.fillStyle = '#4a5568';
+                    ctx.font = '11px sans-serif';
+                    ctx.textAlign = 'center';
+                    const meter = (x - START_PIXEL_X + 20) / PIXEL_PER_METER;
+                    if (meter >= 0 && meter <= PHYSICS_MAX) {
+                        ctx.fillText(meter.toFixed(1) + 'm', x, GROUND_Y + 24);
+                    }
+                }
+            }
+            ctx.fillStyle = '#4a5568';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('起点', START_PIXEL_X - 6, GROUND_Y + 42);
+
+            // 小车像素位置
+            let pixelX = START_PIXEL_X + pos * PIXEL_PER_METER;
+            pixelX = Math.min(Math.max(pixelX, 20), MAX_PIXEL_X);
+            const carX = pixelX - CAR_WIDTH / 2;
+            const carY = CAR_BASE_Y;
+            const centerX = pixelX;
+            const centerY = carY + CAR_HEIGHT / 2;
+
+            // 力箭头 (动态比例)
+            const forceScale = getForceScale();
+            const pullLen = pullForce * forceScale;
+            const fricLen = frictionForce * forceScale;
+            // 限制最大长度避免超出画布 (但我们已经通过比例控制)
+            const maxLen = 200;
+            const pullLenClamped = Math.min(pullLen, maxLen);
+            const fricLenClamped = Math.min(fricLen, maxLen);
+
+            drawArrow(ctx, centerX, centerY, centerX + pullLenClamped, centerY, '#e53e3e', 3.2);
+            // 摩擦力：静止时若拉力<=摩擦力，显示静摩擦等于拉力
+            let frictionDisplay = frictionForce;
+            if (simState === STATE.IDLE && speed < 0.001 && pullForce <= frictionForce && pullForce > 0) {
+                frictionDisplay = pullForce;
+            }
+            const fricLenDisp = frictionDisplay * forceScale;
+            const fricLenClampedDisp = Math.min(fricLenDisp, maxLen);
+            drawArrow(ctx, centerX, centerY, centerX - fricLenClampedDisp, centerY, '#dd6b20', 3.2);
+
+            // 小车
+            drawCar(ctx, carX, carY, CAR_WIDTH, CAR_HEIGHT, WHEEL_RADIUS);
+
+            // 速度矢量
+            if (speed > 0.02 && simState !== STATE.IDLE) {
+                const speedPx = Math.min(speed * 12, 80);
+                const spdX = centerX + speedPx;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY - CAR_HEIGHT / 2 - 18);
+                ctx.lineTo(spdX, centerY - CAR_HEIGHT / 2 - 18);
+                ctx.strokeStyle = '#2b6cb0';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([5, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                const headLen = 10, headAngle = 0.45;
+                ctx.beginPath();
+                ctx.moveTo(spdX, centerY - CAR_HEIGHT / 2 - 18);
+                ctx.lineTo(spdX - headLen * Math.cos(headAngle), centerY - CAR_HEIGHT / 2 - 18 - headLen * Math.sin(headAngle));
+                ctx.moveTo(spdX, centerY - CAR_HEIGHT / 2 - 18);
+                ctx.lineTo(spdX - headLen * Math.cos(headAngle), centerY - CAR_HEIGHT / 2 - 18 + headLen * Math.sin(headAngle));
+                ctx.strokeStyle = '#2b6cb0';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.fillStyle = '#2b6cb0';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('v', spdX + 6, centerY - CAR_HEIGHT / 2 - 14);
+            }
+
+            // 力数值
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#e53e3e';
+            ctx.fillText('拉力 ' + pullForce.toFixed(1) + 'N', centerX + pullLenClamped + 10, centerY - 6);
+            ctx.fillStyle = '#dd6b20';
+            ctx.textAlign = 'right';
+            ctx.fillText('摩擦力 ' + frictionDisplay.toFixed(1) + 'N', centerX - fricLenClampedDisp - 10, centerY - 6);
+
+            // 参数信息
+            ctx.textAlign = 'left';
+            ctx.fillStyle = '#2d3748';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('m = ' + mass.toFixed(1) + 'kg', 16, 22);
+            if (simState === STATE.IDLE) {
+                ctx.fillStyle = '#6b46c1';
+                ctx.font = 'bold 13px sans-serif';
+                ctx.fillText('🚀 初速度 = ' + initialSpeed.toFixed(1) + ' m/s', 16, 44);
+            } else {
+                ctx.fillStyle = '#718096';
+                ctx.font = '12px sans-serif';
+                ctx.fillText('初速度: ' + initialSpeed.toFixed(1) + ' m/s', 16, 44);
+            }
+
+            if (pos >= PHYSICS_MAX) {
+                ctx.fillStyle = '#e53e3e';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🏁 终点', MAX_PIXEL_X, 40);
+            }
+
+            // 更新数据显示
+            const spd = Math.abs(speed) < 0.0005 ? 0 : speed;
+            const acc = Math.abs(accel) < 0.0005 ? 0 : accel;
+            dispSpeed.innerHTML = spd.toFixed(2) + ' <span class="unit">m/s</span>';
+            dispAccel.innerHTML = acc.toFixed(2) + ' <span class="unit">m/s²</span>';
+            dispPos.innerHTML = pos.toFixed(2) + ' <span class="unit">m</span>';
+            dispNetForce.innerHTML = netForce.toFixed(2) + ' <span class="unit">N</span>';
+            dispStatus.textContent = statusText;
+            dispStatus.className = 'status-badge ' + statusClass;
+        }
+
+        // ---- 绘制小车 ----
+        function drawCar(ctx, x, y, w, h, r) {
+            ctx.shadowColor = 'rgba(0,0,0,0.08)';
+            ctx.shadowBlur = 14;
+            ctx.shadowOffsetY = 4;
+            const rx = 6;
+            ctx.beginPath();
+            ctx.moveTo(x + rx, y);
+            ctx.lineTo(x + w - rx, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + rx);
+            ctx.lineTo(x + w, y + h - rx);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - rx, y + h);
+            ctx.lineTo(x + rx, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - rx);
+            ctx.lineTo(x, y + rx);
+            ctx.quadraticCurveTo(x, y, x + rx, y);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(x, y, x, y + h);
+            grad.addColorStop(0, '#63b3ed');
+            grad.addColorStop(0.5, '#4299e1');
+            grad.addColorStop(1, '#2b6cb0');
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.strokeStyle = '#2c5282';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(255,255,255,0.35)';
+            ctx.beginPath();
+            ctx.roundRect(x + 12, y + 4, 20, 14, 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(x + 38, y + 4, 20, 14, 4);
+            ctx.fill();
+
+            ctx.fillStyle = '#f6e05e';
+            ctx.beginPath();
+            ctx.arc(x + w - 6, y + 8, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fbd38d';
+            ctx.beginPath();
+            ctx.arc(x + 6, y + 8, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            const wheelY = y + h - 2;
+            const wheelPositions = [x + 14, x + w - 14];
+            ctx.shadowColor = 'rgba(0,0,0,0.12)';
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetY = 2;
+            for (let wx of wheelPositions) {
+                ctx.beginPath();
+                ctx.arc(wx, wheelY, r, 0, Math.PI * 2);
+                ctx.fillStyle = '#2d3748';
+                ctx.fill();
+                ctx.strokeStyle = '#1a202c';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(wx, wheelY, r * 0.45, 0, Math.PI * 2);
+                ctx.fillStyle = '#4a5568';
+                ctx.fill();
+                ctx.fillStyle = '#718096';
+                ctx.beginPath();
+                ctx.arc(wx, wheelY, r * 0.22, 0, Math.PI * 2);
+                ctx.fill();
+                for (let i = 0; i < 4; i++) {
+                    const angle = i * Math.PI / 2 + 0.2;
+                    ctx.beginPath();
+                    ctx.moveTo(wx, wheelY);
+                    ctx.lineTo(wx + r * 0.65 * Math.cos(angle), wheelY + r * 0.65 * Math.sin(angle));
+                    ctx.strokeStyle = '#718096';
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+            }
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🚗', x + w/2, y + h/2 + 6);
+        }
+
+        // ---- 箭头绘制 ----
+        function drawArrow(ctx, x1, y1, x2, y2, color, lineWidth) {
+            const dx = x2 - x1, dy = y2 - y1;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 2) return;
+            const angle = Math.atan2(dy, dx);
+            const headLen = Math.min(14, len * 0.32);
+            const headAngle = 0.45;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = lineWidth || 2.8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLen * Math.cos(angle - headAngle), y2 - headLen * Math.sin(angle - headAngle));
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLen * Math.cos(angle + headAngle), y2 - headLen * Math.sin(angle + headAngle));
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - headLen * 0.9 * Math.cos(angle - headAngle), y2 - headLen * 0.9 * Math.sin(angle - headAngle));
+            ctx.lineTo(x2 - headLen * 0.9 * Math.cos(angle + headAngle), y2 - headLen * 0.9 * Math.sin(angle + headAngle));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.25;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
+        // ---- roundRect polyfill ----
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+                const r = typeof radii === 'number' ? radii : (radii || 0);
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                return this;
+            };
+        }
+
+        // ---- 动画循环 ----
+        function animate(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const dt = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+            updatePhysics(dt);
+            drawScene();
+            animId = requestAnimationFrame(animate);
+        }
+
+        // ---- 控制函数 ----
+        function resetSim() {
+            simState = STATE.IDLE;
+            pos = 0;
+            speed = 0;
+            accel = 0;
+            netForce = 0;
+            statusText = '⏸ 待启动';
+            statusClass = 'idle';
+            btnStart.textContent = '▶ 启动';
+            btnStart.disabled = false;
+            btnPause.textContent = '⏸ 暂停';
+            btnPause.disabled = true;
+            pullForce = parseFloat(sliderPull.value);
+            frictionForce = parseFloat(sliderFriction.value);
+            mass = parseFloat(sliderMass.value);
+            initialSpeed = parseFloat(sliderInitSpeed.value);
+            updateDisplayValues();
+            drawScene();
+        }
+
+        function startSim() {
+            if (simState === STATE.IDLE) {
+                simState = STATE.RUNNING;
+                speed = initialSpeed;
+                pos = 0;
+                accel = 0;
+                netForce = 0;
+                btnStart.textContent = '▶ 运行中';
+                btnStart.disabled = true;
+                btnPause.textContent = '⏸ 暂停';
+                btnPause.disabled = false;
+                if (!animId) {
+                    lastTimestamp = 0;
+                    animId = requestAnimationFrame(animate);
+                }
+            } else if (simState === STATE.PAUSED) {
+                simState = STATE.RUNNING;
+                btnStart.textContent = '▶ 运行中';
+                btnStart.disabled = true;
+                btnPause.textContent = '⏸ 暂停';
+                btnPause.disabled = false;
+            }
+        }
+
+        function pauseSim() {
+            if (simState === STATE.RUNNING) {
+                simState = STATE.PAUSED;
+                btnPause.textContent = '▶ 继续';
+                btnStart.textContent = '⏸ 已暂停';
+                btnStart.disabled = false;
+                statusText = '⏸ 已暂停';
+                statusClass = 'paused';
+                drawScene();
+            } else if (simState === STATE.PAUSED) {
+                simState = STATE.RUNNING;
+                btnPause.textContent = '⏸ 暂停';
+                btnStart.textContent = '▶ 运行中';
+                btnStart.disabled = true;
+            }
+        }
+
+        function updateDisplayValues() {
+            valPull.innerHTML = pullForce.toFixed(1) + ' <span class="u">N</span>';
+            valFriction.innerHTML = frictionForce.toFixed(1) + ' <span class="u">N</span>';
+            valMass.innerHTML = mass.toFixed(1) + ' <span class="u">kg</span>';
+            valInitSpeed.innerHTML = initialSpeed.toFixed(1) + ' <span class="u">m/s</span>';
+        }
+
+        // ---- 滑块事件 ----
+        sliderPull.addEventListener('input', function() {
+            pullForce = parseFloat(this.value);
+            valPull.innerHTML = pullForce.toFixed(1) + ' <span class="u">N</span>';
+        });
+        sliderFriction.addEventListener('input', function() {
+            frictionForce = parseFloat(this.value);
+            valFriction.innerHTML = frictionForce.toFixed(1) + ' <span class="u">N</span>';
+        });
+        sliderMass.addEventListener('input', function() {
+            mass = parseFloat(this.value);
+            valMass.innerHTML = mass.toFixed(1) + ' <span class="u">kg</span>';
+        });
+        sliderInitSpeed.addEventListener('input', function() {
+            initialSpeed = parseFloat(this.value);
+            valInitSpeed.innerHTML = initialSpeed.toFixed(1) + ' <span class="u">m/s</span>';
+            if (simState === STATE.IDLE) drawScene();
+        });
+
+        // ---- 按钮事件 ----
+        btnReset.addEventListener('click', resetSim);
+        btnStart.addEventListener('click', startSim);
+        btnPause.addEventListener('click', pauseSim);
+
+        // ---- 初始化 ----
+        function init() {
+            pullForce = parseFloat(sliderPull.value);
+            frictionForce = parseFloat(sliderFriction.value);
+            mass = parseFloat(sliderMass.value);
+            initialSpeed = parseFloat(sliderInitSpeed.value);
+            updateDisplayValues();
+            simState = STATE.IDLE;
+            pos = 0; speed = 0; accel = 0; netForce = 0;
+            statusText = '⏸ 待启动';
+            statusClass = 'idle';
+            btnStart.textContent = '▶ 启动';
+            btnStart.disabled = false;
+            btnPause.textContent = '⏸ 暂停';
+            btnPause.disabled = true;
+            drawScene();
+            if (!animId) {
+                lastTimestamp = 0;
+                animId = requestAnimationFrame(animate);
+            }
+        }
+
+        window.addEventListener('beforeunload', function() {
+            if (animId) cancelAnimationFrame(animId);
+        });
+
+        init();
+        console.log('🚗 小车物理模拟器已启动 (拉力0~100N, 摩擦力0~50N)');
+    </script>
+</body>
+</html>

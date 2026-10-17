@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>匀变速直线运动 · 两车追及相遇问题</title>
+<style>
+:root{
+  --bg:#0b1220; --panel:#111c2e; --panel2:#16233a;
+  --line:#24354f; --text:#e6eefc; --muted:#8fa4c2;
+  --A:#38bdf8; --B:#fb923c; --ok:#34d399; --warn:#fbbf24;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;overflow-x:hidden;}
+body{
+  background:radial-gradient(1200px 620px at 18% -12%, #17253d 0%, #0b1220 62%);
+  color:var(--text);
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  min-height:100vh;
+}
+header{
+  padding:8px 16px 2px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+}
+header h1{
+  font-size:17px;margin:0;letter-spacing:1.2px;font-weight:700;
+  background:linear-gradient(90deg,#38bdf8,#a78bfa,#fb923c);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+header .sub{font-size:11.5px;color:var(--muted);}
+
+.wrap{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 262px 262px;
+  gap:10px;
+  padding:5px 14px 12px;
+  max-width:1840px;
+  margin:0 auto;
+  align-items:start;
+}
+@media (max-width:1500px){
+  .wrap{grid-template-columns:minmax(0,1fr) 286px;}
+  #main{grid-column:1;grid-row:1 / span 2;align-self:start;}
+  #side1{grid-column:2;grid-row:1;}
+  #side2{grid-column:2;grid-row:2;}
+}
+@media (max-width:1020px){
+  .wrap{grid-template-columns:1fr;}
+  #main,#side1,#side2{grid-column:1;grid-row:auto;}
+}
+
+.card{
+  background:linear-gradient(180deg,#111c2e,#0e1829);
+  border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 8px 26px rgba(0,0,0,.36);
+  overflow:hidden;
+}
+.card .hd{
+  padding:5px 12px;font-size:11.5px;font-weight:600;color:#cfe0f7;
+  border-bottom:1px solid var(--line);letter-spacing:.5px;
+  display:flex;align-items:center;gap:7px;
+}
+.card .hd .dot{width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 8px #38bdf8;flex:none;}
+
+#main{display:flex;flex-direction:column;gap:10px;}
+#scene{display:block;}
+.charts{display:flex;gap:10px;}
+.charts .card{flex:1 1 0;min-width:0;}
+canvas.chart{display:block;}
+
+/* ---------- 侧栏 ---------- */
+.side{display:flex;flex-direction:column;gap:10px;}
+
+.ctrl-row{display:flex;align-items:center;gap:8px;padding:3px 12px;}
+.ctrl-row label{width:60px;font-size:11.5px;color:var(--muted);flex:none;}
+.ctrl-row input[type=range]{
+  flex:1;min-width:0;-webkit-appearance:none;height:5px;border-radius:3px;
+  background:#22334d;outline:none;
+}
+.ctrl-row input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:#e2e8f0;border:3px solid #38bdf8;cursor:pointer;
+  box-shadow:0 0 7px rgba(56,189,248,.7);
+}
+.ctrl-row input[type=range].orange::-webkit-slider-thumb{border-color:#fb923c;box-shadow:0 0 7px rgba(251,146,60,.7);}
+.ctrl-row .val{
+  width:44px;text-align:right;font-size:11.5px;font-variant-numeric:tabular-nums;
+  color:#e6eefc;font-weight:600;flex:none;
+}
+.group-title{
+  padding:4px 12px 1px;font-size:10.5px;letter-spacing:.8px;font-weight:600;
+}
+.group-title.a{color:#5cc8f5;}
+.group-title.b{color:#f9a86a;}
+
+.presets{padding:6px 10px 9px;display:flex;gap:6px;}
+.presets button{
+  flex:1 1 0;padding:6px 2px;font-size:10.5px;border-radius:8px;cursor:pointer;
+  background:#1a2942;color:#c8d8ef;border:1px solid #2c4160;
+  transition:.16s;font-family:inherit;white-space:nowrap;
+}
+.presets button:hover{background:#233a5c;border-color:#3d5c86;color:#fff;}
+.presets button.active{background:linear-gradient(180deg,#1d4ed8,#1e40af);border-color:#3b82f6;color:#fff;}
+
+/* ---------- 数据读数 ---------- */
+.readouts{padding:5px 12px 9px;font-size:12px;font-variant-numeric:tabular-nums;}
+.ro-line{
+  display:flex;justify-content:space-between;gap:8px;
+  padding:3px 0;border-bottom:1px dashed #1c2b41;line-height:1.5;
+}
+.ro-line:last-child{border-bottom:none;}
+.ro-line span:first-child{color:var(--muted);white-space:nowrap;}
+.ro-line span:last-child{font-weight:600;white-space:nowrap;}
+.ca{color:var(--A);} .cb{color:var(--B);}
+
+/* ---------- 分析 ---------- */
+.analysis{padding:8px 14px 10px;font-size:12px;line-height:1.7;}
+.analysis .top{
+  display:flex;flex-wrap:wrap;gap:4px 26px;align-items:baseline;
+}
+.analysis .top > div{white-space:nowrap;}
+.analysis b{color:#fde68a;font-variant-numeric:tabular-nums;}
+.tag{
+  display:inline-block;padding:2px 11px;border-radius:16px;font-size:11px;
+  font-weight:700;letter-spacing:.4px;
+}
+.tag.ok{background:rgba(52,211,153,.16);color:#34d399;border:1px solid rgba(52,211,153,.45);}
+.tag.warn{background:rgba(251,191,36,.14);color:#fbbf24;border:1px solid rgba(251,191,36,.45);}
+.analysis .hint{color:var(--muted);font-size:11.5px;margin-top:5px;line-height:1.65;}
+.analysis .crit{
+  font-size:10.5px;color:#6b7f9e;margin-top:5px;padding-top:5px;
+  border-top:1px dashed #24354f;line-height:1.55;
+}
+
+/* ---------- 播放条 ---------- */
+.bar{display:flex;align-items:center;gap:9px;padding:10px 14px;flex-wrap:wrap;}
+.btn{
+  padding:8px 18px;border-radius:9px;border:1px solid #2c4160;cursor:pointer;
+  background:#1a2942;color:#dbe8fb;font-size:13.5px;font-family:inherit;font-weight:600;
+  transition:.16s;
+}
+.btn:hover{background:#233a5c;border-color:#3d5c86;}
+.btn:active{transform:scale(.96);}
+.btn.primary{
+  background:linear-gradient(180deg,#0ea5e9,#0284c7);border-color:#38bdf8;color:#fff;
+  box-shadow:0 4px 14px rgba(14,165,233,.32);
+}
+.btn.primary:hover{background:linear-gradient(180deg,#38bdf8,#0ea5e9);}
+select{
+  background:#1a2942;color:#dbe8fb;border:1px solid #2c4160;border-radius:8px;
+  padding:8px 8px;font-size:12.5px;font-family:inherit;cursor:pointer;
+}
+.kb-hint{
+  margin-left:auto;font-size:11px;color:#6b7f9e;letter-spacing:.3px;white-space:nowrap;
+}
+@media (max-width:560px){ .kb-hint{display:none;} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>匀变速直线运动 · 两车追及相遇问题</h1>
+  <span class="sub">拖动滑块改变参数，观察运动过程与 v–t / x–t 图像</span>
+</header>
+
+<div class="wrap">
+
+  <div id="main">
+    <div class="card">
+      <div class="hd"><span class="dot"></span>运动实景模拟</div>
+      <canvas id="scene"></canvas>
+    </div>
+
+    <div class="charts">
+      <div class="card">
+        <div class="hd"><span class="dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></span>v – t 图像</div>
+        <canvas id="vt" class="chart"></canvas>
+      </div>
+      <div class="card">
+        <div class="hd"><span class="dot" style="background:#34d399;box-shadow:0 0 8px #34d399"></span>x – t 图像</div>
+        <canvas id="xt" class="chart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><span class="dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></span>追及条件分析</div>
+      <div class="analysis" id="analysis"></div>
+    </div>
+
+    <div class="card">
+      <div class="bar">
+        <button class="btn primary" id="btnPlay">▶ 播放</button>
+        <button class="btn" id="btnReset">↺ 重置</button>
+        <select id="selSpeed">
+          <option value="0.25">0.25×</option>
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1.0×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2.0×</option>
+        </select>
+        <span class="kb-hint">空格键：播放 / 暂停　　R 键：重置</span>
+      </div>
+    </div>
+  </div>
+
+  <aside class="side" id="side1">
+
+    <div class="card">
+      <div class="hd"><span class="dot" style="background:#38bdf8;box-shadow:0 0 8px #38bdf8"></span>甲车（前车）</div>
+      <div class="group-title a">初速度 v₀ₐ (m/s)</div>
+      <div class="ctrl-row">
+        <label>v₀ₐ</label>
+        <input type="range" id="s_vA0" min="0" max="30" step="0.5" value="10">
+        <span class="val" id="v_vA0">10.0</span>
+      </div>
+      <div class="group-title a">加速度 aₐ (m/s²)</div>
+      <div class="ctrl-row">
+        <label>aₐ</label>
+        <input type="range" id="s_aA" min="-5" max="5" step="0.1" value="0">
+        <span class="val" id="v_aA">0.0</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><span class="dot" style="background:#fb923c;box-shadow:0 0 8px #fb923c"></span>乙车（后车）</div>
+      <div class="group-title b">初速度 v₀ᵦ (m/s)</div>
+      <div class="ctrl-row">
+        <label>v₀ᵦ</label>
+        <input type="range" id="s_vB0" class="orange" min="0" max="40" step="0.5" value="20">
+        <span class="val" id="v_vB0">20.0</span>
+      </div>
+      <div class="group-title b">加速度 aᵦ (m/s²)</div>
+      <div class="ctrl-row">
+        <label>aᵦ</label>
+        <input type="range" id="s_aB" class="orange" min="-8" max="4" step="0.1" value="-2">
+        <span class="val" id="v_aB">-2.0</span>
+      </div>
+      <div class="group-title b">初始间距 Δx₀ (m)</div>
+      <div class="ctrl-row">
+        <label>Δx₀</label>
+        <input type="range" id="s_d0" class="orange" min="5" max="80" step="1" value="25">
+        <span class="val" id="v_d0">25</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><span class="dot" style="background:#fbbf24;box-shadow:0 0 8px #fbbf24"></span>典型情形（一键切换）</div>
+      <div class="presets" id="presets">
+        <button data-p="0" class="active">恰好追上</button>
+        <button data-p="1">追得上</button>
+        <button data-p="2">追不上</button>
+        <button data-p="3">加速逃离</button>
+      </div>
+    </div>
+
+  </aside>
+
+  <aside class="side" id="side2">
+    <div class="card">
+      <div class="hd"><span class="dot" style="background:#34d399;box-shadow:0 0 8px #34d399"></span>实时数据</div>
+      <div class="readouts">
+        <div class="ro-line"><span>运动时间 t</span><span id="rTime">0.00 s</span></div>
+        <div class="ro-line"><span class="ca">甲车位置 xₐ</span><span class="ca" id="rAx">0.00 m</span></div>
+        <div class="ro-line"><span class="ca">甲车速度 vₐ</span><span class="ca" id="rAv">0.00 m/s</span></div>
+        <div class="ro-line"><span class="cb">乙车位置 xᵦ</span><span class="cb" id="rBx">0.00 m</span></div>
+        <div class="ro-line"><span class="cb">乙车速度 vᵦ</span><span class="cb" id="rBv">0.00 m/s</span></div>
+        <div class="ro-line"><span>两车间距 Δx</span><span id="rGap">0.00 m</span></div>
+        <div class="ro-line"><span>相对速度 vᵦ−vₐ</span><span id="rDv">0.00 m/s</span></div>
+        <div class="ro-line"><span>间距变化</span><span id="rTrend" style="color:#8fa4c2">—</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+
+/* ========================================================
+   1. 物理参数与状态
+   ======================================================== */
+const P = { vA0:10, aA:0, vB0:20, aB:-2, d0:25 };
+
+let t       = 0;
+let playing = false;
+let speedMul = 1;
+let tCatch  = null;
+let tEqual  = null;
+let T_total = 12;
+let worldRange = { min:-30, max:80 };
+
+const posA = tt => P.vA0*tt + 0.5*P.aA*tt*tt;
+const velA = tt => P.vA0 + P.aA*tt;
+const posB = tt => -P.d0 + P.vB0*tt + 0.5*P.aB*tt*tt;
+const velB = tt => P.vB0 + P.aB*tt;
+
+/* ========================================================
+   2. 画布
+   ======================================================== */
+const sceneCanvas = document.getElementById('scene');
+const vtCanvas    = document.getElementById('vt');
+const xtCanvas    = document.getElementById('xt');
+
+let sceneCtx, vtCtx, xtCtx;
+let sceneW=900, sceneH=140, vtW=380, vtH=150, xtW=380, xtH=150;
+
+function setupCanvas(cv, w, h){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width  = Math.max(1, Math.round(w*dpr));
+  cv.height = Math.max(1, Math.round(h*dpr));
+  cv.style.width  = w + 'px';
+  cv.style.height = h + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return ctx;
+}
+
+function resize(){
+  const mainEl = document.getElementById('main');
+  const mw = mainEl.clientWidth;
+  if (mw < 20) return;
+
+  sceneW = mw - 2;
+  sceneH = Math.round(Math.min(146, Math.max(112, mw*0.092)));
+  sceneCtx = setupCanvas(sceneCanvas, sceneW, sceneH);
+
+  const cw = Math.max(150, (mw - 10)/2 - 2);
+  const ch = Math.round(Math.min(150, Math.max(112, cw*0.38)));
+  vtW = cw; vtH = ch; xtW = cw; xtH = ch;
+  vtCtx = setupCanvas(vtCanvas, cw, ch);
+  xtCtx = setupCanvas(xtCanvas, cw, ch);
+
+  render();
+}
+window.addEventListener('resize', ()=>{ clearTimeout(window.__rz); window.__rz = setTimeout(resize, 120); });
+
+/* ========================================================
+   3. 工具
+   ======================================================== */
+function roundRect(ctx,x,y,w,h,r){
+  r = Math.max(0, Math.min(r, w/2, h/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,   x+w,y+h, r);
+  ctx.arcTo(x+w,y+h, x,  y+h, r);
+  ctx.arcTo(x,  y+h, x,  y,   r);
+  ctx.arcTo(x,  y,   x+w,y,   r);
+  ctx.closePath();
+}
+function niceStep(raw){
+  if (raw <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw/mag;
+  let s;
+  if (n <= 1) s = 1; else if (n <= 2) s = 2; else if (n <= 5) s = 5; else s = 10;
+  return s*mag;
+}
+function niceTicks(min, max, count){
+  const step = niceStep((max-min)/count);
+  const out = [];
+  for (let v = Math.ceil(min/step)*step; v <= max + step*1e-6; v += step){
+    out.push(Math.abs(v) < step*1e-6 ? 0 : v);
+  }
+  return { ticks: out, step };
+}
+const w2s = x => (x - worldRange.min)/(worldRange.max - worldRange.min) * sceneW;
+
+/* ========================================================
+   4. 参数变化 → 重新计算
+   ======================================================== */
+/* ★ 核心修改：视图范围 = 轨迹的 85%，让车能"跑出去消失" ★ */
+function computeRange(){
+  let mn = Infinity, mx = -Infinity;
+  const N = 120;
+  for (let i=0;i<=N;i++){
+    const tt = T_total*i/N;
+    mn = Math.min(mn, posA(tt), posB(tt));
+    mx = Math.max(mx, posA(tt), posB(tt));
+  }
+  /* 保证初始位置在考虑范围内 */
+  mn = Math.min(mn, posA(0), posB(0));
+  mx = Math.max(mx, posA(0), posB(0));
+
+  const span = mx - mn;
+  /* ★ 视图比轨迹窄 —— 车会从边缘自然滑出并消失 */
+  const halfWidth = Math.max(30, span / 2 * 0.85);
+  const center = (mn + mx) / 2;
+  return { min: center - halfWidth, max: center + halfWidth };
+}
+
+function rebuild(){
+  const a = 0.5*(P.aB - P.aA);
+  const b = (P.vB0 - P.vA0);
+  const c = -P.d0;
+
+  let roots = [];
+  if (Math.abs(a) < 1e-9){
+    if (Math.abs(b) > 1e-9) roots = [-c/b];
+  } else {
+    const disc = b*b - 4*a*c;
+    if (disc >= -1e-9){
+      const s = Math.sqrt(Math.max(0, disc));
+      roots = [(-b-s)/(2*a), (-b+s)/(2*a)];
+    }
+  }
+  roots = roots.filter(r => r > 1e-4).sort((p,q)=>p-q);
+  tCatch = roots.length ? roots[0] : null;
+
+  const denom = P.aB - P.aA;
+  if (Math.abs(denom) > 1e-9){
+    const te = (P.vA0 - P.vB0)/denom;
+    tEqual = (te > 1e-4) ? te : null;
+  } else {
+    tEqual = null;
+  }
+
+  /* ★ 延长动画时长，让车有充分时间滑出屏幕 ★ */
+  if (tCatch !== null){
+    T_total = Math.min(16, Math.max(tCatch + 1.8, tCatch * 1.2));
+  } else {
+    T_total = 8;
+  }
+  T_total = Math.max(T_total, 1.0);
+
+  worldRange = computeRange();
+  t = 0;
+
+  updateAnalysis();
+  updateReadouts();
+}
+
+/* ========================================================
+   5. 绘制：运动实景
+   ======================================================== */
+function carWidthPx(){
+  const scale = sceneW / (worldRange.max - worldRange.min);
+  return Math.max(28, Math.min(76, 4.2*scale));
+}
+
+function drawCar(ctx, cx, groundY, w, color, dark, label, worldX){
+  const wheelR    = w*0.115;
+  const bodyW     = w*0.96;
+  const bodyH     = w*0.29;
+  const bodyBottom= groundY - wheelR*1.35;
+  const bodyTop   = bodyBottom - bodyH;
+  const cabW      = w*0.54;
+  const cabH      = w*0.22;
+  const cabBottom = bodyTop + 2;
+  const cabTop    = cabBottom - cabH;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, groundY+1.5, w*0.48, 3.2, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(0,0,0,.40)';
+  ctx.fill();
+  ctx.restore();
+
+  [-0.29, 0.29].forEach(k=>{
+    const wx = cx + k*w;
+    const wy = groundY - wheelR;
+    ctx.beginPath();
+    ctx.arc(wx, wy, wheelR, 0, Math.PI*2);
+    ctx.fillStyle = '#0a1120';
+    ctx.fill();
+    ctx.strokeStyle = '#5b7191';
+    ctx.lineWidth = Math.max(1.1, w*0.022);
+    ctx.stroke();
+
+    const ang = worldX*1.7;
+    ctx.save();
+    ctx.translate(wx, wy);
+    ctx.rotate(ang);
+    ctx.strokeStyle = '#93a9c4';
+    ctx.lineWidth = Math.max(0.9, w*0.016);
+    for (let i=0;i<3;i++){
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, -wheelR*0.70); ctx.stroke();
+      ctx.rotate(Math.PI*2/3);
+    }
+    ctx.restore();
+  });
+
+  roundRect(ctx, cx-bodyW/2, bodyTop, bodyW, bodyH, w*0.075);
+  let g = ctx.createLinearGradient(0, bodyTop, 0, bodyBottom);
+  g.addColorStop(0, color);
+  g.addColorStop(1, dark);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  roundRect(ctx, cx-cabW/2, cabTop, cabW, cabH+4, w*0.065);
+  g = ctx.createLinearGradient(0, cabTop, 0, cabBottom);
+  g.addColorStop(0, color);
+  g.addColorStop(1, dark);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(190,232,255,.55)';
+  roundRect(ctx, cx-cabW/2 + w*0.05, cabTop + w*0.04,
+            cabW - w*0.10, cabH - w*0.06, w*0.026);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx + bodyW/2 - w*0.05, bodyTop + bodyH*0.42, w*0.033, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,247,200,.9)';
+  ctx.fill();
+
+  ctx.font = `700 ${Math.max(10, Math.round(w*0.21))}px "PingFang SC","Microsoft YaHei",sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#dbe8fb';
+  ctx.fillText(label, cx, cabTop - 6);
+}
+
+function drawRuler(ctx, W, groundY){
+  const span = worldRange.max - worldRange.min;
+  const step = niceStep(span/9);
+  ctx.font = '9.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const start = Math.ceil(worldRange.min/step)*step;
+  for (let x = start; x <= worldRange.max + 1e-6; x += step){
+    const px = w2s(x);
+    if (px < -20 || px > W+20) continue;
+    ctx.strokeStyle = 'rgba(148,163,184,.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(px, groundY+2);
+    ctx.lineTo(px, groundY+6);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,.60)';
+    ctx.fillText(String(Math.round(x)), px, groundY+9);
+  }
+}
+
+function drawScene(){
+  if (!sceneCtx) return;
+  const ctx = sceneCtx, W = sceneW, H = sceneH;
+  ctx.clearRect(0,0,W,H);
+
+  const bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0c1626');
+  bg.addColorStop(1,'#132039');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle = 'rgba(56,189,248,.05)';
+  ctx.lineWidth = 1;
+  for (let y = 22; y < H-52; y += 26){
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+
+  const groundY = H - 42;
+
+  ctx.fillStyle = '#182337';
+  ctx.fillRect(0, groundY, W, H-groundY);
+
+  const rg = ctx.createLinearGradient(0, groundY, 0, groundY+14);
+  rg.addColorStop(0,'rgba(56,189,248,.16)');
+  rg.addColorStop(1,'rgba(56,189,248,0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, groundY, W, 14);
+
+  ctx.strokeStyle = '#2c4260';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, groundY+0.5); ctx.lineTo(W, groundY+0.5); ctx.stroke();
+
+  ctx.save();
+  ctx.setLineDash([16,14]);
+  ctx.strokeStyle = 'rgba(148,163,184,.16)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, groundY+26); ctx.lineTo(W, groundY+26); ctx.stroke();
+  ctx.restore();
+
+  drawRuler(ctx, W, groundY);
+
+  const xA = posA(t), xB = posB(t);
+  const xAs = w2s(xA), xBs = w2s(xB);
+  const carW = carWidthPx();
+
+  const dY = 16;
+  const leftS  = Math.min(xAs, xBs);
+  const rightS = Math.max(xAs, xBs);
+  const gap = xA - xB;
+
+  /* 只在两车都基本在可视范围内时才画间距标注 */
+  const bothVisible = (xAs > -carW && xAs < W+carW && xBs > -carW && xBs < W+carW);
+
+  if (bothVisible){
+    ctx.save();
+    ctx.setLineDash([5,5]);
+    ctx.strokeStyle = 'rgba(148,163,184,.32)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xAs, 10); ctx.lineTo(xAs, groundY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xBs, 10); ctx.lineTo(xBs, groundY); ctx.stroke();
+    ctx.restore();
+
+    if (rightS - leftS > 30 && leftS > -40 && rightS < W+40){
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(leftS+5, dY); ctx.lineTo(rightS-5, dY); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(leftS+5, dY); ctx.lineTo(leftS+12, dY-4.5); ctx.lineTo(leftS+12, dY+4.5);
+      ctx.closePath(); ctx.fillStyle = '#94a3b8'; ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(rightS-5, dY); ctx.lineTo(rightS-12, dY-4.5); ctx.lineTo(rightS-12, dY+4.5);
+      ctx.closePath(); ctx.fill();
+
+      ctx.font = '600 11.5px "PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const mid = (leftS + rightS)/2;
+      const txt = 'Δx = ' + gap.toFixed(2) + ' m';
+      const tw = ctx.measureText(txt).width;
+      ctx.fillStyle = 'rgba(11,18,32,.88)';
+      roundRect(ctx, mid-tw/2-7, dY-8.5, tw+14, 17, 6);
+      ctx.fill();
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText(txt, mid, dY+0.5);
+    }
+  }
+
+  /* 两车绘制 —— 超出画布的部分会被 canvas 自动裁掉，看起来就是"跑出去消失" */
+  drawCar(ctx, xAs, groundY, carW, '#38bdf8', '#0369a1', '甲', xA);
+  drawCar(ctx, xBs, groundY, carW, '#fb923c', '#c2410c', '乙', xB);
+
+  /* 相遇提示 / 追不上提示 */
+  ctx.font = '700 12.5px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'alphabetic';
+  if (tCatch !== null && t >= tCatch - 1e-6){
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('★ 两车相遇！', W - 12, H - 10);
+  } else if (tCatch === null){
+    ctx.fillStyle = 'rgba(251,191,36,.85)';
+    ctx.fillText('始终未能追上', W - 12, H - 10);
+  }
+}
+
+/* ========================================================
+   6. 绘制：v–t 图像
+   ======================================================== */
+function drawVT(){
+  if (!vtCtx) return;
+  const ctx = vtCtx, W = vtW, H = vtH;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0c1626';
+  ctx.fillRect(0,0,W,H);
+
+  const pad = { l:42, r:10, t:14, b:22 };
+  const pw = W - pad.l - pad.r;
+  const ph = H - pad.t - pad.b;
+
+  let vmin = 0, vmax = 0;
+  for (let i=0;i<=80;i++){
+    const tt = T_total*i/80;
+    vmin = Math.min(vmin, velA(tt), velB(tt));
+    vmax = Math.max(vmax, velA(tt), velB(tt));
+  }
+  vmax = Math.max(vmax, 5);
+  const sp = (vmax - vmin) || 1;
+  vmax += sp*0.14;
+  vmin -= sp*0.14;
+
+  const X = tt => pad.l + tt/T_total*pw;
+  const Y = v  => pad.t + (vmax - v)/(vmax - vmin)*ph;
+
+  const tx = niceTicks(0, T_total, 5);
+  const ty = niceTicks(vmin, vmax, 5);
+
+  ctx.font = '9px sans-serif';
+  ctx.lineWidth = 1;
+
+  ty.ticks.forEach(v=>{
+    const y = Y(v);
+    if (y < pad.t-1 || y > pad.t+ph+1) return;
+    ctx.strokeStyle = (Math.abs(v) < 1e-6) ? 'rgba(148,163,184,.42)' : 'rgba(148,163,184,.12)';
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+pw, y); ctx.stroke();
+    ctx.fillStyle = '#7d93b4';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(v.toFixed(0), pad.l-5, y);
+  });
+
+  tx.ticks.forEach(tt=>{
+    const x = X(tt);
+    if (x < pad.l-1 || x > pad.l+pw+1) return;
+    ctx.strokeStyle = 'rgba(148,163,184,.12)';
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t+ph); ctx.stroke();
+    ctx.fillStyle = '#7d93b4';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(tt.toFixed(1), x, pad.t+ph+4);
+  });
+
+  ctx.strokeStyle = '#3b5273';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t-5); ctx.lineTo(pad.l, pad.t+ph); ctx.lineTo(pad.l+pw+4, pad.t+ph);
+  ctx.stroke();
+
+  ctx.fillStyle = '#8fa4c2';
+  ctx.font = '9.5px sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('v/(m·s⁻¹)', pad.l-38, pad.t-12);
+  ctx.textAlign = 'right';
+  ctx.fillText('t/s', pad.l+pw+4, pad.t+ph+13);
+
+  const drawCurve = (fn, color, lw) => {
+    ctx.beginPath();
+    for (let i=0;i<=240;i++){
+      const tt = T_total*i/240;
+      const px = X(tt), py = Y(fn(tt));
+      i ? ctx.lineTo(px,py) : ctx.moveTo(px,py);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  };
+  drawCurve(velA, '#38bdf8', 2.3);
+  drawCurve(velB, '#fb923c', 2.3);
+
+  if (tEqual !== null && tEqual <= T_total){
+    const x = X(tEqual), y = Y(velA(tEqual));
+    ctx.save();
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle = 'rgba(167,139,250,.75)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(x, pad.t+ph); ctx.lineTo(x, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(x, y); ctx.stroke();
+    ctx.restore();
+
+    ctx.beginPath();
+    ctx.arc(x, y, 3.8, 0, Math.PI*2);
+    ctx.fillStyle = '#a78bfa';
+    ctx.fill();
+    ctx.strokeStyle = '#0c1626';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    ctx.font = '9px sans-serif';
+    ctx.fillStyle = '#c4b5fd';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText('v 相等', x+5, y-4);
+  }
+
+  const cx = X(t);
+  ctx.save();
+  ctx.setLineDash([3,3]);
+  ctx.strokeStyle = 'rgba(226,232,240,.42)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.moveTo(cx, pad.t+ph); ctx.lineTo(cx, pad.t); ctx.stroke();
+  ctx.restore();
+
+  [[velA,'#38bdf8'],[velB,'#fb923c']].forEach(([fn,col])=>{
+    const y = Y(fn(t));
+    ctx.beginPath();
+    ctx.arc(cx, y, 4.2, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = '#0c1626';
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+  });
+
+  ctx.font = '10.5px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#38bdf8'; ctx.fillText('■ 甲', pad.l+6, pad.t+5);
+  ctx.fillStyle = '#fb923c'; ctx.fillText('■ 乙', pad.l+46, pad.t+5);
+}
+
+/* ========================================================
+   7. 绘制：x–t 图像
+   ======================================================== */
+function drawXT(){
+  if (!xtCtx) return;
+  const ctx = xtCtx, W = xtW, H = xtH;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#0c1626';
+  ctx.fillRect(0,0,W,H);
+
+  const pad = { l:42, r:10, t:14, b:22 };
+  const pw = W - pad.l - pad.r;
+  const ph = H - pad.t - pad.b;
+
+  let xmin = Infinity, xmax = -Infinity;
+  for (let i=0;i<=80;i++){
+    const tt = T_total*i/80;
+    xmin = Math.min(xmin, posA(tt), posB(tt));
+    xmax = Math.max(xmax, posA(tt), posB(tt));
+  }
+  const sp = (xmax - xmin) || 1;
+  xmax += sp*0.10; xmin -= sp*0.10;
+
+  const X = tt => pad.l + tt/T_total*pw;
+  const Y = x  => pad.t + (xmax - x)/(xmax - xmin)*ph;
+
+  const tx = niceTicks(0, T_total, 5);
+  const ty = niceTicks(xmin, xmax, 5);
+
+  ctx.font = '9px sans-serif';
+  ctx.lineWidth = 1;
+
+  ty.ticks.forEach(v=>{
+    const y = Y(v);
+    if (y < pad.t-1 || y > pad.t+ph+1) return;
+    ctx.strokeStyle = (Math.abs(v) < 1e-6) ? 'rgba(148,163,184,.42)' : 'rgba(148,163,184,.12)';
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+pw, y); ctx.stroke();
+    ctx.fillStyle = '#7d93b4';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(v.toFixed(0), pad.l-5, y);
+  });
+
+  tx.ticks.forEach(tt=>{
+    const x = X(tt);
+    if (x < pad.l-1 || x > pad.l+pw+1) return;
+    ctx.strokeStyle = 'rgba(148,163,184,.12)';
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t+ph); ctx.stroke();
+    ctx.fillStyle = '#7d93b4';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(tt.toFixed(1), x, pad.t+ph+4);
+  });
+
+  ctx.strokeStyle = '#3b5273';
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t-5); ctx.lineTo(pad.l, pad.t+ph); ctx.lineTo(pad.l+pw+4, pad.t+ph);
+  ctx.stroke();
+
+  ctx.fillStyle = '#8fa4c2';
+  ctx.font = '9.5px sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('x/m', pad.l-32, pad.t-12);
+  ctx.textAlign = 'right';
+  ctx.fillText('t/s', pad.l+pw+4, pad.t+ph+13);
+
+  const drawCurve = (fn, color, lw) => {
+    ctx.beginPath();
+    for (let i=0;i<=260;i++){
+      const tt = T_total*i/260;
+      const px = X(tt), py = Y(fn(tt));
+      i ? ctx.lineTo(px,py) : ctx.moveTo(px,py);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  };
+  drawCurve(posA, '#38bdf8', 2.3);
+  drawCurve(posB, '#fb923c', 2.3);
+
+  if (tCatch !== null && tCatch <= T_total){
+    const x = X(tCatch), y = Y(posA(tCatch));
+    ctx.beginPath();
+    ctx.arc(x, y, 4.8, 0, Math.PI*2);
+    ctx.fillStyle = '#34d399';
+    ctx.fill();
+    ctx.strokeStyle = '#0c1626';
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+
+    ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#6ee7b7';
+    const right = x > pad.l+pw*0.62;
+    ctx.textAlign = right ? 'right' : 'left';
+    ctx.textBaseline = 'top';
+    const lx = right ? x-6 : x+6;
+    ctx.fillText('相遇 ' + tCatch.toFixed(2) + 's', lx, y+5);
+  }
+
+  const cx = X(t);
+  ctx.save();
+  ctx.setLineDash([3,3]);
+  ctx.strokeStyle = 'rgba(226,232,240,.42)';
+  ctx.lineWidth = 1.1;
+  ctx.beginPath(); ctx.moveTo(cx, pad.t+ph); ctx.lineTo(cx, pad.t); ctx.stroke();
+  ctx.restore();
+
+  [[posA,'#38bdf8'],[posB,'#fb923c']].forEach(([fn,col])=>{
+    const y = Y(fn(t));
+    ctx.beginPath();
+    ctx.arc(cx, y, 4.2, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = '#0c1626';
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+  });
+
+  ctx.font = '10.5px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#38bdf8'; ctx.fillText('■ 甲', pad.l+6, pad.t+5);
+  ctx.fillStyle = '#fb923c'; ctx.fillText('■ 乙', pad.l+46, pad.t+5);
+}
+
+/* ========================================================
+   8. 数据刷新
+   ======================================================== */
+const $ = id => document.getElementById(id);
+
+function updateReadouts(){
+  const xA = posA(t), vA = velA(t);
+  const xB = posB(t), vB = velB(t);
+  const gap = xA - xB;
+  const dv  = vB - vA;
+
+  $('rTime').textContent = t.toFixed(2) + ' s';
+  $('rAx').textContent = xA.toFixed(2) + ' m';
+  $('rAv').textContent = vA.toFixed(2) + ' m/s';
+  $('rBx').textContent = xB.toFixed(2) + ' m';
+  $('rBv').textContent = vB.toFixed(2) + ' m/s';
+  $('rGap').textContent = gap.toFixed(2) + ' m';
+  $('rDv').textContent  = (dv >= 0 ? '+' : '') + dv.toFixed(2) + ' m/s';
+
+  const tr = $('rTrend');
+  if (Math.abs(dv) < 0.05){ tr.textContent = '几乎不变 —'; tr.style.color = '#8fa4c2'; }
+  else if (dv > 0){ tr.textContent = '缩小 ▼'; tr.style.color = '#34d399'; }
+  else { tr.textContent = '拉大 ▲'; tr.style.color = '#f87171'; }
+}
+
+function updateAnalysis(){
+  const el = $('analysis');
+  let html = '';
+
+  if (tCatch !== null){
+    const isCritical = Math.abs(
+      (P.vB0 - P.vA0)*(P.vB0 - P.vA0) + 2*(P.aB - P.aA)*P.d0
+    ) < 1e-3;
+
+    html += `<div class="top">`;
+    html += `<span class="tag ok">${isCritical ? '恰好追上（临界）' : '能追上'}</span>`;
+    html += `<div>追上时刻：<b>t = ${tCatch.toFixed(2)} s</b></div>`;
+    html += `<div>追上位置：<b>x = ${posA(tCatch).toFixed(2)} m</b></div>`;
+    html += `<div>此时 vₐ = <b>${velA(tCatch).toFixed(2)}</b> m/s，vᵦ = <b>${velB(tCatch).toFixed(2)}</b> m/s</div>`;
+    html += `</div>`;
+
+    if (isCritical){
+      html += `<div class="hint">💡 此时两车速度恰好相等，之后乙车速度小于甲车，只能相遇一次。这是"刚好不相撞"的临界情形。</div>`;
+    } else {
+      html += `<div class="hint">💡 乙车速度仍大于甲车，追上后会继续超越甲车，两车会发生第二次相遇。</div>`;
+    }
+  } else {
+    html += `<div class="top">`;
+    html += `<span class="tag warn">追不上</span>`;
+
+    if (tEqual !== null){
+      const dmin = posA(tEqual) - posB(tEqual);
+      html += `<div>速度相等时刻：<b>t = ${tEqual.toFixed(2)} s</b></div>`;
+      html += `<div>最小间距：<b>Δx<sub>min</sub> = ${dmin.toFixed(2)} m</b></div>`;
+      html += `</div>`;
+      html += `<div class="hint">💡 速度相等前，乙车比甲车快，间距不断缩小；速度相等后，乙车比甲车慢，间距重新拉大。所以 <b>速度相等时</b> 就是两车相距最近的时刻。</div>`;
+    } else {
+      html += `</div>`;
+      html += `<div class="hint">💡 乙车的速度始终不大于甲车，两车间距只会越来越大，永远追不上。</div>`;
+    }
+  }
+
+  html += `<div class="crit">
+    判据：相对位移 Δx<sub>rel</sub>(t) = (v₀ᵦ−v₀ₐ)t + ½(aᵦ−aₐ)t²，当 Δx<sub>rel</sub> ≥ Δx₀ 时方程有解，即表示能追上。
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+/* ========================================================
+   9. 渲染循环
+   ======================================================== */
+function render(){
+  drawScene();
+  drawVT();
+  drawXT();
+  updateReadouts();
+}
+
+let lastTs = 0;
+function loop(ts){
+  if (!lastTs) lastTs = ts;
+  let dt = (ts - lastTs)/1000;
+  lastTs = ts;
+  dt = Math.min(dt, 0.06);
+
+  if (playing){
+    t += dt * speedMul;
+    if (t >= T_total){
+      t = T_total;
+      playing = false;
+      syncPlayBtn();
+    }
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ========================================================
+   10. 交互
+   ======================================================== */
+function syncPlayBtn(){
+  $('btnPlay').textContent = playing ? '⏸ 暂停' : '▶ 播放';
+}
+
+function bindSlider(id, key){
+  const s = $('s_' + id), v = $('v_' + id);
+  const upd = () => {
+    P[key] = parseFloat(s.value);
+    v.textContent = P[key].toFixed(1);
+    rebuild();
+    render();
+  };
+  s.addEventListener('input', upd);
+  v.textContent = P[key].toFixed(1);
+}
+
+bindSlider('vA0','vA0');
+bindSlider('aA', 'aA');
+bindSlider('vB0','vB0');
+bindSlider('aB', 'aB');
+
+$('v_d0').textContent = P.d0;
+$('s_d0').addEventListener('input', e=>{
+  P.d0 = parseFloat(e.target.value);
+  $('v_d0').textContent = P.d0.toFixed(0);
+  rebuild(); render();
+});
+
+$('btnPlay').addEventListener('click', ()=>{
+  if (t >= T_total - 1e-6) t = 0;
+  playing = !playing;
+  syncPlayBtn();
+});
+$('btnReset').addEventListener('click', ()=>{
+  t = 0; playing = false; syncPlayBtn(); render();
+});
+$('selSpeed').addEventListener('change', e=>{
+  speedMul = parseFloat(e.target.value);
+});
+
+window.addEventListener('keydown', e=>{
+  if (e.code === 'Space'){
+    e.preventDefault();
+    if (t >= T_total - 1e-6) t = 0;
+    playing = !playing; syncPlayBtn();
+  }
+  if (e.key === 'r' || e.key === 'R'){
+    t = 0; playing = false; syncPlayBtn(); render();
+  }
+});
+
+/* ---------- 预设情形 ---------- */
+const PRESETS = [
+  { vA0:10, aA:0,   vB0:20, aB:-2,  d0:25 },
+  { vA0:10, aA:0,   vB0:20, aB:-2,  d0:20 },
+  { vA0:10, aA:0,   vB0:20, aB:-3,  d0:25 },
+  { vA0:5,  aA:1.5, vB0:12, aB:0,   d0:20 }
+];
+
+function applyPreset(i){
+  Object.assign(P, PRESETS[i]);
+
+  $('s_vA0').value = P.vA0; $('v_vA0').textContent = P.vA0.toFixed(1);
+  $('s_aA').value  = P.aA;  $('v_aA').textContent  = P.aA.toFixed(1);
+  $('s_vB0').value = P.vB0; $('v_vB0').textContent = P.vB0.toFixed(1);
+  $('s_aB').value  = P.aB;  $('v_aB').textContent  = P.aB.toFixed(1);
+  $('s_d0').value  = P.d0;  $('v_d0').textContent  = P.d0.toFixed(0);
+
+  document.querySelectorAll('#presets button').forEach((b,k)=>{
+    b.classList.toggle('active', k === i);
+  });
+
+  t = 0; playing = false; syncPlayBtn();
+  rebuild(); render();
+}
+
+document.querySelectorAll('#presets button').forEach(btn=>{
+  btn.addEventListener('click', ()=> applyPreset(parseInt(btn.dataset.p, 10)));
+});
+
+/* ========================================================
+   11. 启动
+   ======================================================== */
+rebuild();
+requestAnimationFrame(()=>{ resize(); applyPreset(0); });
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
