@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>匀速小车 · 竖直上抛 · 超高视角</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #0b121f;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: linear-gradient(145deg, #141e30, #1a2a40);
+            border-radius: 32px;
+            padding: 28px 28px 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            margin-bottom: 18px;
+        }
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #e8edf5;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .header h1 small {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #8aa3c9;
+            letter-spacing: 0;
+        }
+        .header .badge {
+            background: #2a4a7a;
+            color: #b6d0f0;
+            padding: 4px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid #3a6a9a;
+        }
+
+        .canvas-wrapper {
+            background: #0a111f;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid #2a3a5a;
+            position: relative;
+        }
+        .canvas-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #0a111f;
+            touch-action: none;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px 32px;
+            padding: 12px 16px 8px;
+            background: #0e1729;
+            border-radius: 0 0 20px 20px;
+            border-top: 1px solid #1f2f4a;
+            font-size: 0.85rem;
+            color: #b0c8e8;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-item .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .legend-item .line-sample {
+            width: 24px;
+            height: 3px;
+            border-radius: 4px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 18px;
+            margin-top: 18px;
+            padding: 16px 18px;
+            background: #0e1729;
+            border-radius: 18px;
+            border: 1px solid #1f2f4a;
+            align-items: center;
+        }
+        .controls .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: #1f3150;
+            border: none;
+            color: #d0def0;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #2f4a6a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn:hover {
+            background: #2a4068;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-primary {
+            background: #2a6a9a;
+            border-color: #3a8aba;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(42, 106, 154, 0.35);
+        }
+        .btn-primary:hover {
+            background: #3a7aaa;
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-success {
+            background: #1f8a4a;
+            border-color: #2aaa5a;
+            color: #fff;
+        }
+        .btn-success:hover {
+            background: #2a9a5a;
+        }
+        .btn-outline {
+            background: transparent;
+            border-color: #3a5a7a;
+            color: #90b0d0;
+        }
+        .btn-outline:hover {
+            background: #1a2a40;
+            border-color: #5a7a9a;
+        }
+
+        .controls .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .controls .slider-group label {
+            color: #90b0d0;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .controls .slider-group input[type="range"] {
+            width: 90px;
+            accent-color: #3a8aba;
+            background: #1a2a3a;
+            height: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls .slider-group .val {
+            color: #d0def0;
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .controls .status {
+            color: #8aaac8;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+        .controls .status .pulse {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4a8a4a;
+            transition: background 0.3s;
+        }
+        .controls .status .pulse.paused {
+            background: #8a7a3a;
+        }
+        .controls .status .pulse.idle {
+            background: #5a5a6a;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 16px;
+            }
+            .header h1 {
+                font-size: 1.3rem;
+                flex-wrap: wrap;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .controls .slider-group {
+                justify-content: space-between;
+            }
+            .controls .btn-group {
+                justify-content: center;
+            }
+            .controls .status {
+                justify-content: center;
+                margin-left: 0;
+            }
+            .legend {
+                font-size: 0.75rem;
+                gap: 8px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>
+                🚂 匀速小车 · 竖直上抛
+                <small>超高视角 · 5倍高度</small>
+            </h1>
+            <span class="badge">⚡ 无空气阻力 · 可调抛高</span>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="1100" height="820"></canvas>
+            <!-- 图例 -->
+            <div class="legend">
+                <span class="legend-item">
+                    <span class="dot" style="background:#f0c050;border-color:#f0c050;"></span>
+                    小球 (车参考系)
+                </span>
+                <span class="legend-item">
+                    <span class="dot" style="background:#50b0f0;border-color:#50b0f0;"></span>
+                    小球 (地面参考系)
+                </span>
+                <span class="legend-item">
+                    <span class="line-sample" style="background:#f0c050;opacity:0.5;"></span>
+                    轨迹 (车参考系)
+                </span>
+                <span class="legend-item">
+                    <span class="line-sample" style="background:#50b0f0;opacity:0.5;"></span>
+                    轨迹 (地面参考系)
+                </span>
+                <span class="legend-item" style="margin-left:auto;">
+                    <span style="opacity:0.6;">🟢 小车</span>
+                    <span style="opacity:0.6;margin-left:12px;">🌍 地面</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- 控制栏 -->
+        <div class="controls">
+            <div class="btn-group">
+                <button class="btn btn-success" id="btnLaunch">🚀 发射</button>
+                <button class="btn btn-primary" id="btnPause">⏸️ 暂停</button>
+                <button class="btn btn-outline" id="btnReset">🔄 重置</button>
+                <button class="btn btn-outline" id="btnTrajectory">📐 轨迹</button>
+            </div>
+
+            <div class="slider-group">
+                <label>车速</label>
+                <input type="range" id="speedSlider" min="0.5" max="5.0" step="0.25" value="1.5" />
+                <span class="val" id="speedVal">1.5</span>
+
+                <label style="margin-left:8px;">抛高</label>
+                <input type="range" id="v0Slider" min="2.0" max="28.0" step="0.5" value="12.0" />
+                <span class="val" id="v0Val">12.0</span>
+
+                <label style="margin-left:8px;">速度</label>
+                <input type="range" id="speedScaleSlider" min="0.05" max="0.8" step="0.05" value="0.30" />
+                <span class="val" id="speedScaleVal">0.30</span>
+            </div>
+
+            <div class="status">
+                <span class="pulse idle" id="statusPulse"></span>
+                <span id="statusText">就绪</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================================
+        //  物理模拟 —— 匀速小车 + 竖直上抛 (无空气阻力)
+        //  初速范围 2.0~28.0，默认 12.0，高度约为之前的 7 倍
+        //  画布加高至 820px，地面下移至 740px
+        // =============================================================
+
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ---- 尺寸 ----
+        const W = 1100,
+            H = 820;
+        canvas.width = W;
+        canvas.height = H;
+
+        // ---- 物理参数 ----
+        const GRAVITY = 0.35; // 重力加速度 (像素/帧²) 略微调低让轨迹更舒展
+        const GROUND_Y = 740; // 地面高度 (大幅下移，给高空留出巨大空间)
+        const CAR_WIDTH = 100;
+        const CAR_HEIGHT = 32;
+        const WHEEL_R = 8;
+
+        // ---- 状态 ----
+        let state = {
+            carX: 60,
+            carV: 1.5,
+            launchV0: 12.0, // 默认初速 12，高度 ≈ 12²/(2×0.35) ≈ 206px
+            timeScale: 0.30,
+
+            ballCar: { x: 0, y: 0, vx: 0, vy: 0, active: false },
+            ballGround: { x: 0, y: 0, vx: 0, vy: 0, active: false },
+
+            trailCar: [],
+            trailGround: [],
+            showTrail: true,
+
+            paused: false,
+            launched: false,
+            settling: false,
+
+            maxHeight: 0,
+            flightTime: 0,
+        };
+
+        // ---- DOM 引用 ----
+        const btnLaunch = document.getElementById('btnLaunch');
+        const btnPause = document.getElementById('btnPause');
+        const btnReset = document.getElementById('btnReset');
+        const btnTrajectory = document.getElementById('btnTrajectory');
+        const speedSlider = document.getElementById('speedSlider');
+        const v0Slider = document.getElementById('v0Slider');
+        const speedScaleSlider = document.getElementById('speedScaleSlider');
+        const speedVal = document.getElementById('speedVal');
+        const v0Val = document.getElementById('v0Val');
+        const speedScaleVal = document.getElementById('speedScaleVal');
+        const statusText = document.getElementById('statusText');
+        const statusPulse = document.getElementById('statusPulse');
+
+        // ---- 辅助 ----
+        function getCarCenterX() {
+            return state.carX + CAR_WIDTH / 2;
+        }
+
+        function getCarTopY() {
+            return GROUND_Y - CAR_HEIGHT;
+        }
+
+        // ---- 重置 ----
+        function resetSim(keepTrailSetting = true) {
+            state.carX = 60;
+            state.ballCar.active = false;
+            state.ballGround.active = false;
+            state.launched = false;
+            state.settling = false;
+            state.maxHeight = 0;
+            state.flightTime = 0;
+            if (!keepTrailSetting) {
+                state.showTrail = true;
+                btnTrajectory.textContent = '📐 轨迹';
+            }
+            state.trailCar = [];
+            state.trailGround = [];
+            state.paused = false;
+            btnPause.textContent = '⏸️ 暂停';
+            statusPulse.className = 'pulse idle';
+            statusText.textContent = '就绪';
+            btnLaunch.disabled = false;
+            updateUI();
+        }
+
+        // ---- 发射 ----
+        function launch() {
+            if (state.launched) return;
+            state.carX = 60;
+            state.trailCar = [];
+            state.trailGround = [];
+            state.maxHeight = 0;
+            state.flightTime = 0;
+
+            const cx = getCarCenterX();
+            const ty = getCarTopY();
+            const startY = ty - 10;
+
+            state.ballCar.x = cx;
+            state.ballCar.y = startY;
+            state.ballCar.vx = 0;
+            state.ballCar.vy = -state.launchV0;
+            state.ballCar.active = true;
+
+            state.ballGround.x = cx;
+            state.ballGround.y = startY;
+            state.ballGround.vx = state.carV;
+            state.ballGround.vy = -state.launchV0;
+            state.ballGround.active = true;
+
+            state.launched = true;
+            state.settling = false;
+            state.paused = false;
+            btnPause.textContent = '⏸️ 暂停';
+            statusPulse.className = 'pulse';
+            statusText.textContent = '飞行中...';
+            btnLaunch.disabled = true;
+            updateUI();
+        }
+
+        // ---- 物理更新 ----
+        function updatePhysics() {
+            if (state.paused) return;
+            if (!state.launched) return;
+
+            const ts = state.timeScale;
+            state.carX += state.carV * ts;
+            if (state.carX > W + 20) state.carX = -CAR_WIDTH - 20;
+
+            // ---- 车参考系小球 ----
+            if (state.ballCar.active) {
+                const b = state.ballCar;
+                b.vy += GRAVITY * ts;
+                b.x += b.vx * ts;
+                b.y += b.vy * ts;
+
+                const currentHeight = GROUND_Y - b.y;
+                if (currentHeight > state.maxHeight) state.maxHeight = currentHeight;
+
+                if (state.showTrail) {
+                    state.trailCar.push({ x: b.x, y: b.y });
+                    if (state.trailCar.length > 800) state.trailCar.shift();
+                }
+
+                if (b.y >= GROUND_Y - 6) {
+                    b.y = GROUND_Y - 6;
+                    b.active = false;
+                    state.settling = true;
+                    state.ballGround.active = false;
+                    state.launched = false;
+                    state.flightTime = (state.trailCar.length / 60) / state.timeScale;
+                    statusPulse.className = 'pulse idle';
+                    statusText.textContent =
+                    `已落地 · 最高 ${state.maxHeight.toFixed(0)}px · 飞行 ${state.flightTime.toFixed(1)}s`;
+                    btnLaunch.disabled = false;
+                }
+            }
+
+            // ---- 地面参考系小球 ----
+            if (state.ballGround.active) {
+                const b = state.ballGround;
+                b.vy += GRAVITY * ts;
+                b.x += b.vx * ts;
+                b.y += b.vy * ts;
+
+                if (state.showTrail) {
+                    state.trailGround.push({ x: b.x, y: b.y });
+                    if (state.trailGround.length > 800) state.trailGround.shift();
+                }
+
+                if (b.y >= GROUND_Y - 6) {
+                    b.y = GROUND_Y - 6;
+                    b.active = false;
+                }
+            }
+
+            updateUI();
+        }
+
+        // ---- 渲染 ----
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // 天空 — 深空渐变，让高空更有纵深感
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+            skyGrad.addColorStop(0, '#050a18');
+            skyGrad.addColorStop(0.2, '#0a1628');
+            skyGrad.addColorStop(0.5, '#142442');
+            skyGrad.addColorStop(0.8, '#1a2a4a');
+            skyGrad.addColorStop(1, '#0f1a30');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, W, GROUND_Y);
+
+            // 星星 (装饰)
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            const stars = [
+                [80, 40],
+                [200, 70],
+                [350, 25],
+                [500, 55],
+                [680, 30],
+                [850, 65],
+                [1000, 20],
+                [150, 120],
+                [420, 100],
+                [760, 90],
+                [920, 130],
+                [60, 180],
+                [550, 160],
+                [1050, 50]
+            ];
+            stars.forEach(([x, y]) => {
+                ctx.beginPath();
+                ctx.arc(x, y, 1 + Math.random() * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 地面
+            const groundGrad = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+            groundGrad.addColorStop(0, '#2a3a2a');
+            groundGrad.addColorStop(0.3, '#1a2a1a');
+            groundGrad.addColorStop(1, '#0a120a');
+            ctx.fillStyle = groundGrad;
+            ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+            ctx.strokeStyle = '#4a7a4a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(W, GROUND_Y);
+            ctx.stroke();
+            ctx.strokeStyle = '#2a4a2a';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([8, 16]);
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y + 16);
+            ctx.lineTo(W, GROUND_Y + 16);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // ---- 小车 ----
+            const cx = state.carX;
+            const ty = getCarTopY();
+
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetY = 6;
+            const carGrad = ctx.createLinearGradient(cx, ty, cx, ty + CAR_HEIGHT);
+            carGrad.addColorStop(0, '#4a7aaa');
+            carGrad.addColorStop(0.4, '#3a6a9a');
+            carGrad.addColorStop(1, '#2a4a6a');
+            ctx.fillStyle = carGrad;
+            ctx.shadowBlur = 16;
+            ctx.shadowOffsetY = 4;
+            ctx.beginPath();
+            ctx.roundRect(cx, ty, CAR_WIDTH, CAR_HEIGHT, 6);
+            ctx.fill();
+
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = '#7ab0e0';
+            ctx.beginPath();
+            ctx.roundRect(cx + 10, ty - 10, 20, 14, 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(cx + 40, ty - 10, 20, 14, 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(cx + 70, ty - 10, 20, 14, 4);
+            ctx.fill();
+
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetY = 3;
+            ctx.fillStyle = '#1a1a2a';
+            ctx.strokeStyle = '#3a3a5a';
+            ctx.lineWidth = 2;
+            const wheelPos = [cx + 16, cx + CAR_WIDTH - 16];
+            wheelPos.forEach(wx => {
+                ctx.beginPath();
+                ctx.arc(wx, GROUND_Y - 2, WHEEL_R, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#4a4a6a';
+                ctx.beginPath();
+                ctx.arc(wx, GROUND_Y - 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#1a1a2a';
+            });
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            ctx.fillStyle = '#f0d050';
+            ctx.beginPath();
+            ctx.arc(cx + CAR_WIDTH - 4, ty + 8, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#d0b030';
+            ctx.beginPath();
+            ctx.arc(cx + 4, ty + 8, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // ---- 轨迹 ----
+            if (state.showTrail) {
+                if (state.trailCar.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(240, 192, 80, 0.6)';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = 'rgba(240, 192, 80, 0.3)';
+                    ctx.moveTo(state.trailCar[0].x, state.trailCar[0].y);
+                    for (let i = 1; i < state.trailCar.length; i++) {
+                        ctx.lineTo(state.trailCar[i].x, state.trailCar[i].y);
+                    }
+                    ctx.stroke();
+                }
+                if (state.trailGround.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(80, 176, 240, 0.6)';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = 'rgba(80, 176, 240, 0.3)';
+                    ctx.moveTo(state.trailGround[0].x, state.trailGround[0].y);
+                    for (let i = 1; i < state.trailGround.length; i++) {
+                        ctx.lineTo(state.trailGround[i].x, state.trailGround[i].y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+            }
+
+            // ---- 小球 (车参考系) ----
+            if (state.ballCar.active || state.trailCar.length > 0) {
+                const bx = state.ballCar.x;
+                const by = state.ballCar.y;
+                if (state.ballCar.active) {
+                    const glow = ctx.createRadialGradient(bx, by, 2, bx, by, 30);
+                    glow.addColorStop(0, 'rgba(240, 200, 80, 0.5)');
+                    glow.addColorStop(1, 'rgba(240, 200, 80, 0)');
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(bx, by, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 32;
+                    ctx.shadowColor = 'rgba(240, 200, 80, 0.6)';
+                    ctx.fillStyle = '#f0c050';
+                    ctx.beginPath();
+                    ctx.arc(bx, by, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(255,255,220,0.4)';
+                    ctx.beginPath();
+                    ctx.arc(bx - 3, by - 4, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // ---- 小球 (地面参考系) ----
+            if (state.ballGround.active) {
+                const bx = state.ballGround.x;
+                const by = state.ballGround.y;
+                const glow = ctx.createRadialGradient(bx, by, 2, bx, by, 30);
+                glow.addColorStop(0, 'rgba(80, 176, 240, 0.5)');
+                glow.addColorStop(1, 'rgba(80, 176, 240, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(bx, by, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 32;
+                ctx.shadowColor = 'rgba(80, 176, 240, 0.6)';
+                ctx.fillStyle = '#50b0f0';
+                ctx.beginPath();
+                ctx.arc(bx, by, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.arc(bx - 3, by - 4, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // ---- 标注 ----
+            ctx.shadowBlur = 0;
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = 'rgba(240, 192, 80, 0.9)';
+            ctx.fillText('🚗 车参考系', 20, 16);
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(200, 180, 140, 0.5)';
+            ctx.fillText('(小球竖直上抛 · 竖直下落)', 20, 38);
+
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(80, 176, 240, 0.9)';
+            ctx.fillText('🌍 地面参考系', W - 20, 16);
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(140, 180, 220, 0.5)';
+            ctx.fillText('(小球做抛物线运动)', W - 20, 38);
+
+            // ---- 信息显示 ----
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(180, 200, 220, 0.4)';
+            const infoY = H - 8;
+            ctx.fillText(
+                `车速: ${state.carV.toFixed(1)}  初速: ${state.launchV0.toFixed(1)}  模拟速度: ${(state.timeScale*100).toFixed(0)}%`,
+                16, infoY);
+
+            if (state.ballCar.active) {
+                const h = GROUND_Y - state.ballCar.y;
+                ctx.textAlign = 'right';
+                ctx.fillStyle = 'rgba(240, 192, 80, 0.5)';
+                ctx.fillText(`当前高度: ${h.toFixed(0)} px`, W - 16, infoY);
+            } else if (state.settling || !state.launched) {
+                if (state.maxHeight > 0) {
+                    ctx.textAlign = 'right';
+                    ctx.fillStyle = 'rgba(180, 200, 220, 0.3)';
+                    ctx.fillText(`最高: ${state.maxHeight.toFixed(0)} px  飞行: ${state.flightTime.toFixed(1)} s`, W - 16,
+                    infoY);
+                }
+            }
+
+            // ---- 高度标尺 (左侧) ----
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '10px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(180, 200, 220, 0.15)';
+            const step = 100;
+            for (let y = GROUND_Y - step; y > 20; y -= step) {
+                const h = GROUND_Y - y;
+                ctx.fillText(`${h}px`, 4, y + 2);
+                ctx.strokeStyle = 'rgba(180, 200, 220, 0.06)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            // ---- 提示 ----
+            if (!state.launched && !state.settling) {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '20px "Segoe UI", sans-serif';
+                ctx.fillStyle = 'rgba(180, 200, 220, 0.2)';
+                ctx.fillText('点击「发射」观察小球运动 · 调节「抛高」和「车速」', W / 2, 340);
+                ctx.font = '15px "Segoe UI", sans-serif';
+                ctx.fillStyle = 'rgba(180, 200, 220, 0.12)';
+                ctx.fillText('黄色 = 车参考系 · 蓝色 = 地面参考系', W / 2, 375);
+            }
+
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+        }
+
+        // ---- roundRect ----
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (r > w / 2) r = w / 2;
+                if (r > h / 2) r = h / 2;
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                return this;
+            };
+        }
+
+        // ---- UI 更新 ----
+        function updateUI() {
+            speedVal.textContent = state.carV.toFixed(1);
+            v0Val.textContent = state.launchV0.toFixed(1);
+            speedScaleVal.textContent = state.timeScale.toFixed(2);
+        }
+
+        // ---- 动画循环 ----
+        function loop() {
+            updatePhysics();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // ---- 事件 ----
+        btnLaunch.addEventListener('click', launch);
+
+        btnPause.addEventListener('click', function() {
+            if (!state.launched && !state.settling) return;
+            state.paused = !state.paused;
+            this.textContent = state.paused ? '▶️ 继续' : '⏸️ 暂停';
+            statusPulse.className = state.paused ? 'pulse paused' : 'pulse';
+            statusText.textContent = state.paused ? '已暂停' : (state.launched ? '飞行中...' : '已落地');
+        });
+
+        btnReset.addEventListener('click', function() {
+            resetSim(true);
+            state.showTrail = true;
+            btnTrajectory.textContent = '📐 轨迹';
+        });
+
+        btnTrajectory.addEventListener('click', function() {
+            state.showTrail = !state.showTrail;
+            this.textContent = state.showTrail ? '📐 轨迹' : '📐 轨迹 (关)';
+            if (!state.showTrail) {
+                state.trailCar = [];
+                state.trailGround = [];
+            }
+        });
+
+        speedSlider.addEventListener('input', function() {
+            if (state.launched) return;
+            state.carV = parseFloat(this.value);
+            speedVal.textContent = state.carV.toFixed(1);
+        });
+
+        v0Slider.addEventListener('input', function() {
+            if (state.launched) return;
+            state.launchV0 = parseFloat(this.value);
+            v0Val.textContent = state.launchV0.toFixed(1);
+        });
+
+        speedScaleSlider.addEventListener('input', function() {
+            state.timeScale = parseFloat(this.value);
+            speedScaleVal.textContent = state.timeScale.toFixed(2);
+        });
+
+        // ---- 键盘 ----
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                if (!state.launched && !state.settling) {
+                    launch();
+                } else {
+                    btnPause.click();
+                }
+            }
+            if (e.key === 'r' || e.key === 'R') btnReset.click();
+            if (e.key === 't' || e.key === 'T') btnTrajectory.click();
+        });
+
+        // ---- 启动 ----
+        resetSim(true);
+        state.showTrail = true;
+        btnTrajectory.textContent = '📐 轨迹';
+        loop();
+    </script>
+</body>
+</html>

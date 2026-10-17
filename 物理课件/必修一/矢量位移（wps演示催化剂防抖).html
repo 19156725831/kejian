@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>矢量位移</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            background: #eef2f7;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            /* 防抖优化：强制GPU加速 */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 40px;
+            box-shadow: 0 20px 60px rgba(0, 20, 40, 0.20);
+            padding: 24px 28px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            /* 防抖优化：独立合成层 */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            will-change: transform;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #e4ebf3;
+            padding-bottom: 12px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0a2844;
+        }
+        .header h1 small {
+            font-size: 16px;
+            font-weight: 400;
+            color: #4d6a8a;
+            margin-left: 14px;
+        }
+        .header .hint {
+            font-size: 14px;
+            color: #4d6a8a;
+            background: #f2f6fc;
+            padding: 4px 18px;
+            border-radius: 40px;
+        }
+        .main-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .canvas-wrapper {
+            flex: 1 1 0;
+            min-width: 600px;
+            background: #fafcff;
+            border-radius: 28px;
+            border: 1px solid #dfe8f2;
+            padding: 8px;
+            /* 防抖优化 */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+        #vectorCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            background: #ffffff;
+            touch-action: none;
+            cursor: default;
+            /* 防抖优化：canvas独立层，GPU渲染 */
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            will-change: transform;
+            image-rendering: auto;
+        }
+        .side-panel {
+            flex: 0 0 340px;
+            min-width: 240px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .panel-card {
+            background: #f8fafd;
+            border-radius: 24px;
+            padding: 16px 18px 18px;
+            border: 1px solid #e2eaf3;
+        }
+        .panel-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a3a5c;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-card h3 .badge {
+            font-size: 12px;
+            background: #d1dfee;
+            color: #1a3a5c;
+            padding: 0 12px;
+            border-radius: 30px;
+            font-weight: 500;
+        }
+        .vector-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px 6px 12px;
+            border-radius: 14px;
+            background: white;
+            margin-bottom: 6px;
+            border: 1px solid #e6eef7;
+            font-size: 14px;
+        }
+        .vector-item .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(0,0,0,0.08);
+        }
+        .vector-item .v-label {
+            font-weight: 600;
+            width: 20px;
+            color: #0a2844;
+        }
+        .vector-item .v-data {
+            flex: 1;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            color: #1f3b55;
+        }
+        .vector-item .v-data span {
+            background: #eef3f9;
+            padding: 1px 8px;
+            border-radius: 30px;
+            margin-left: 4px;
+        }
+        .sum-item {
+            background: #ede7f6;
+            border-color: #cebce6;
+        }
+        .sum-item .dot {
+            border-color: #7b5ea7;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            background: #e4ecf5;
+            color: #1a3a5c;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover {
+            background: #cddbea;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn-primary {
+            background: #1a3a5c;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0f2a44;
+        }
+        .btn-danger {
+            background: #e8d0d0;
+            color: #7f3a3a;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: #dcb8b8;
+        }
+        .btn-danger:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .btn-success {
+            background: #c8e0d4;
+            color: #1a5a40;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #b0d0c0;
+        }
+        .btn-success:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .legend-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            font-size: 13px;
+            color: #1f3b55;
+            margin-top: 4px;
+        }
+        .legend-row .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-row .leg-color {
+            width: 24px;
+            height: 3px;
+            border-radius: 4px;
+        }
+        .text-muted {
+            color: #5a7a98;
+            font-size: 13px;
+        }
+        .mt-1 {
+            margin-top: 6px;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        @media (max-width: 900px) {
+            .canvas-wrapper {
+                min-width: 0;
+                flex: 1 1 100%;
+            }
+            .side-panel {
+                flex: 1 1 100%;
+            }
+            .app-container {
+                padding: 16px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .header h1 small {
+                font-size: 13px;
+                display: block;
+                margin-left: 0;
+            }
+        }
+        @media (max-width: 500px) {
+            .vector-item {
+                flex-wrap: wrap;
+                gap: 2px;
+            }
+            .vector-item .v-data {
+                text-align: left;
+                flex: 0 0 100%;
+                margin-left: 22px;
+            }
+            .btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h1>
+            📐 矢量位移
+            <small>起点 &amp; 终点圆点 · 无箭头</small>
+        </h1>
+        <div class="hint">🖱️ 拖拽圆点或中间调整</div>
+    </div>
+
+    <div class="main-layout">
+        <div class="canvas-wrapper">
+            <canvas id="vectorCanvas" width="1100" height="720"></canvas>
+        </div>
+
+        <div class="side-panel">
+            <div class="panel-card">
+                <h3>🎛️ 控制</h3>
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="addBtn">➕ 添加向量</button>
+                    <button class="btn btn-danger" id="removeBtn" disabled>✖ 移除最后一个</button>
+                    <button class="btn" id="resetBtn">↺ 清空</button>
+                </div>
+                <div class="legend-row mt-1">
+                    <span class="leg-item"><span class="leg-color" style="background:#d94f4f;"></span> a</span>
+                    <span class="leg-item"><span class="leg-color" style="background:#3a86c4;"></span> b</span>
+                    <span class="leg-item"><span class="leg-color" style="background:#2b9c6e;"></span> c</span>
+                    <span class="leg-item"><span class="leg-color" style="background:#e67e22;"></span> d</span>
+                    <span class="leg-item"><span class="leg-color" style="background:#8b5ea7;"></span> 和向量</span>
+                </div>
+                <div class="text-muted mt-1">最多 5 个向量 · 方向从起点圆点指向终点圆点</div>
+            </div>
+
+            <div class="panel-card" style="flex:1;">
+                <h3>📊 向量数据 <span class="badge">实时</span></h3>
+                <div id="vectorList" style="max-height:300px; overflow-y:auto;"></div>
+                <div style="margin-top:10px; padding-top:10px; border-top:2px dashed #dce6f0;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-weight:600; color:#5b3e7a;">➕ 和向量</span>
+                        <span id="sumData" style="font-size:14px; color:#1a3a5c;">|v| = 0.00, θ = 0.0°</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ================================================================
+    //  核心状态
+    // ================================================================
+    const canvas = document.getElementById('vectorCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const X_MIN = -10, X_MAX = 10;
+    const Y_MIN = -7, Y_MAX = 7;
+
+    let vectors = [];
+    let nextId = 1;
+
+    let dragTarget = null;          // 'start' | 'end' | 'body'
+    let dragIndex = null;
+    let isDragging = false;
+    let dragOffsetX = 0, dragOffsetY = 0;
+
+    const COLORS = [
+        { main: '#d94f4f', label: 'a' },
+        { main: '#3a86c4', label: 'b' },
+        { main: '#2b9c6e', label: 'c' },
+        { main: '#e67e22', label: 'd' },
+        { main: '#9b59b6', label: 'e' },
+    ];
+    const SUM_COLOR = '#8b5ea7';
+    const MAX_VECTORS = 5;
+
+    const vectorListEl = document.getElementById('vectorList');
+    const sumDataEl = document.getElementById('sumData');
+    const addBtn = document.getElementById('addBtn');
+    const removeBtn = document.getElementById('removeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const HIT_THRESHOLD = 20;
+
+    // ================================================================
+    //  坐标转换
+    // ================================================================
+    function getTransform() {
+        const w = canvas.width;
+        const h = canvas.height;
+        const margin = 60;
+        const drawW = w - 2 * margin;
+        const drawH = h - 2 * margin;
+        const scaleX = drawW / (X_MAX - X_MIN);
+        const scaleY = drawH / (Y_MAX - Y_MIN);
+        const scale = Math.min(scaleX, scaleY);
+        const cx = w / 2;
+        const cy = h / 2;
+        return { scale, cx, cy };
+    }
+
+    function toCanvas(lx, ly) {
+        const { scale, cx, cy } = getTransform();
+        return { x: cx + lx * scale, y: cy - ly * scale };
+    }
+
+    function toLogical(cx, cy) {
+        const { scale, cx: cx0, cy: cy0 } = getTransform();
+        return { x: (cx - cx0) / scale, y: -(cy - cy0) / scale };
+    }
+
+    function clampLogical(x, y, margin = 0.3) {
+        return {
+            x: Math.max(X_MIN + margin, Math.min(X_MAX - margin, x)),
+            y: Math.max(Y_MIN + margin, Math.min(Y_MAX - margin, y))
+        };
+    }
+
+    // ================================================================
+    //  向量运算
+    // ================================================================
+    function vecMag(dx, dy) { return Math.sqrt(dx*dx + dy*dy); }
+    function vecAngle(dx, dy) {
+        if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return null;
+        let ang = Math.atan2(dy, dx) * 180 / Math.PI;
+        if (ang < 0) ang += 360;
+        return ang;
+    }
+    function formatMag(m) { return m.toFixed(2); }
+    function formatAngle(a) { return (a !== null) ? a.toFixed(1) + '°' : '—'; }
+
+    function getSumVector() {
+        let sx = 0, sy = 0;
+        for (const v of vectors) {
+            sx += (v.endX - v.startX);
+            sy += (v.endY - v.startY);
+        }
+        return { x: sx, y: sy };
+    }
+
+    // ================================================================
+    //  绘制
+    // ================================================================
+    function draw() {
+        const w = canvas.width, h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#fafcff';
+        ctx.fillRect(0, 0, w, h);
+
+        const { scale, cx, cy } = getTransform();
+
+        // ---- 网格 ----
+        ctx.save();
+        ctx.strokeStyle = '#e4ebf3';
+        ctx.lineWidth = 0.8;
+        for (let x = Math.ceil(X_MIN); x <= Math.floor(X_MAX); x++) {
+            if (x === 0) continue;
+            const px = cx + x * scale;
+            ctx.beginPath();
+            ctx.moveTo(px, cy + Y_MIN * scale);
+            ctx.lineTo(px, cy + Y_MAX * scale);
+            ctx.stroke();
+        }
+        for (let y = Math.ceil(Y_MIN); y <= Math.floor(Y_MAX); y++) {
+            if (y === 0) continue;
+            const py = cy - y * scale;
+            ctx.beginPath();
+            ctx.moveTo(cx + X_MIN * scale, py);
+            ctx.lineTo(cx + X_MAX * scale, py);
+            ctx.stroke();
+        }
+
+        // ---- 坐标轴 ----
+        ctx.strokeStyle = '#2a4a6a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + X_MIN * scale, cy);
+        ctx.lineTo(cx + X_MAX * scale, cy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + Y_MIN * scale);
+        ctx.lineTo(cx, cy + Y_MAX * scale);
+        ctx.stroke();
+        ctx.fillStyle = '#2a4a6a';
+        ctx.beginPath();
+        ctx.moveTo(cx + X_MAX * scale - 10, cy - 5);
+        ctx.lineTo(cx + X_MAX * scale, cy);
+        ctx.lineTo(cx + X_MAX * scale - 10, cy + 5);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx - 5, cy - Y_MAX * scale + 10);
+        ctx.lineTo(cx, cy - Y_MAX * scale);
+        ctx.lineTo(cx + 5, cy - Y_MAX * scale + 10);
+        ctx.fill();
+        ctx.fillStyle = '#1a3a5c';
+        ctx.font = '16px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('x', cx + X_MAX * scale - 8, cy + 10);
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('y', cx + 10, cy - Y_MAX * scale + 6);
+        ctx.textBaseline = 'top';
+        ctx.fillText('O', cx - 22, cy + 8);
+        ctx.font = '12px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#4d6a8a';
+        ctx.textBaseline = 'top';
+        for (let x = Math.ceil(X_MIN); x <= Math.floor(X_MAX); x++) {
+            if (x === 0) continue;
+            const px = cx + x * scale;
+            ctx.fillText(x, px - 8, cy + 6);
+        }
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = Math.ceil(Y_MIN); y <= Math.floor(Y_MAX); y++) {
+            if (y === 0) continue;
+            const py = cy - y * scale;
+            ctx.fillText(y, cx - 14, py);
+        }
+        ctx.restore();
+
+        // ---- 绘制每个向量 ----
+        for (let i = 0; i < vectors.length; i++) {
+            const v = vectors[i];
+            drawArrow(v.startX, v.startY, v.endX, v.endY, v.color, v.label, i);
+        }
+
+        // ---- 绘制和向量 ----
+        const sum = getSumVector();
+        const sMag = vecMag(sum.x, sum.y);
+        if (vectors.length >= 2 && sMag > 0.01) {
+            drawArrow(0, 0, sum.x, sum.y, SUM_COLOR, 'v_sum', -1, true);
+            const sp = toCanvas(sum.x, sum.y);
+            ctx.save();
+            ctx.fillStyle = SUM_COLOR;
+            ctx.font = 'bold 16px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            const off = (sum.x > 0) ? 12 : -12;
+            ctx.fillText('和向量', sp.x + off, sp.y - 16);
+            ctx.restore();
+        } else if (vectors.length >= 2 && sMag <= 0.01) {
+            const sp = toCanvas(0, 0);
+            ctx.save();
+            ctx.fillStyle = SUM_COLOR;
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, 6, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#5b3e7a';
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('和向量 (零向量)', sp.x + 14, sp.y - 4);
+            ctx.restore();
+        }
+    }
+
+    // ---- 绘制单个向量（起点圆点 + 终点圆点，无箭头头） ----
+    function drawArrow(sx, sy, ex, ey, color, label, idx, isSum = false) {
+        const p1 = toCanvas(sx, sy);
+        const p2 = toCanvas(ex, ey);
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len < 2) {
+            // 极短，画一个点（起点圆点）
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p2.x, p2.y, 6, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.restore();
+            return;
+        }
+
+        ctx.save();
+        // 主线（从起点到终点）
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isSum ? 4 : 3.5;
+        if (isSum) ctx.setLineDash([8, 6]);
+        else ctx.setLineDash([]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // ---- 不绘制箭头头 ----
+
+        // ---- 起点圆点和终点圆点（大小一致） ----
+        if (!isSum) {
+            const r = (idx === dragIndex && (dragTarget === 'start' || dragTarget === 'end')) ? 8 : 6;
+            // 起点圆点
+            ctx.shadowColor = 'rgba(0,0,0,0.10)';
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.arc(p1.x, p1.y, r, 0, 2*Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 终点圆点（与起点一样大）
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.arc(p2.x, p2.y, r, 0, 2*Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 标签放在终点附近
+            ctx.font = 'bold 14px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#1a3a5c';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            const labelOff = (ey >= 0) ? -14 : 14;
+            ctx.fillText(label, p2.x, p2.y + labelOff);
+        } else {
+            // 和向量：终点用菱形（保留以示区别），起点用圆点（原点）
+            const r = 8;
+            // 起点圆点（原点）
+            ctx.shadowColor = 'rgba(0,0,0,0.10)';
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.arc(p1.x, p1.y, r, 0, 2*Math.PI);
+            ctx.fillStyle = SUM_COLOR;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            // 终点菱形
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.moveTo(p2.x, p2.y - r);
+            ctx.lineTo(p2.x + r, p2.y);
+            ctx.lineTo(p2.x, p2.y + r);
+            ctx.lineTo(p2.x - r, p2.y);
+            ctx.closePath();
+            ctx.fillStyle = SUM_COLOR;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    // ================================================================
+    //  更新 UI
+    // ================================================================
+    function updateUI() {
+        let html = '';
+        for (let i = 0; i < vectors.length; i++) {
+            const v = vectors[i];
+            const dx = v.endX - v.startX;
+            const dy = v.endY - v.startY;
+            const mag = vecMag(dx, dy);
+            const ang = vecAngle(dx, dy);
+            const angStr = (ang !== null) ? ang.toFixed(1) + '°' : '—';
+            html += `
+                <div class="vector-item">
+                    <span class="dot" style="background:${v.color};"></span>
+                    <span class="v-label">${v.label}</span>
+                    <span class="v-data">
+                        (${v.startX.toFixed(2)}, ${v.startY.toFixed(2)}) → (${v.endX.toFixed(2)}, ${v.endY.toFixed(2)})
+                        <span>|v| = ${mag.toFixed(2)}</span>
+                        <span>θ = ${angStr}</span>
+                    </span>
+                </div>
+            `;
+        }
+        vectorListEl.innerHTML = html;
+
+        const sum = getSumVector();
+        const sMag = vecMag(sum.x, sum.y);
+        const sAng = vecAngle(sum.x, sum.y);
+        const sAngStr = (sAng !== null) ? sAng.toFixed(1) + '°' : '—';
+        if (vectors.length >= 2) {
+            sumDataEl.innerHTML = `
+                <span style="font-weight:600;">v_sum = (${sum.x.toFixed(2)}, ${sum.y.toFixed(2)})</span>
+                <span style="margin-left:10px;">|v| = ${sMag.toFixed(2)}</span>
+                <span style="margin-left:10px;">θ = ${sAngStr}</span>
+            `;
+        } else {
+            sumDataEl.innerHTML = `<span class="text-muted">需要至少2个向量进行加法</span>`;
+        }
+
+        addBtn.disabled = (vectors.length >= MAX_VECTORS);
+        removeBtn.disabled = (vectors.length === 0);
+    }
+
+    // ================================================================
+    //  交互 (鼠标 / 触摸) — 检测起点、终点、线段
+    // ================================================================
+    function getCanvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let cx, cy;
+        if (e.touches) {
+            cx = (e.touches[0].clientX - rect.left) * scaleX;
+            cy = (e.touches[0].clientY - rect.top) * scaleY;
+        } else {
+            cx = (e.clientX - rect.left) * scaleX;
+            cy = (e.clientY - rect.top) * scaleY;
+        }
+        return { cx, cy };
+    }
+
+    function distToSegment(px, py, ax, ay, bx, by) {
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx*dx + dy*dy;
+        if (lenSq === 0) return Math.hypot(px-ax, py-ay);
+        let t = ((px-ax)*dx + (py-ay)*dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const nearX = ax + t*dx;
+        const nearY = ay + t*dy;
+        return Math.hypot(px-nearX, py-nearY);
+    }
+
+    function hitTest(cx, cy) {
+        for (let i = vectors.length - 1; i >= 0; i--) {
+            const v = vectors[i];
+            const pStart = toCanvas(v.startX, v.startY);
+            const pEnd = toCanvas(v.endX, v.endY);
+            // 检测起点圆点
+            if (Math.hypot(cx - pStart.x, cy - pStart.y) < HIT_THRESHOLD) {
+                return { index: i, target: 'start' };
+            }
+            // 检测终点圆点
+            if (Math.hypot(cx - pEnd.x, cy - pEnd.y) < HIT_THRESHOLD) {
+                return { index: i, target: 'end' };
+            }
+            // 检测线段中间
+            const dist = distToSegment(cx, cy, pStart.x, pStart.y, pEnd.x, pEnd.y);
+            if (dist < HIT_THRESHOLD && dist > 0) {
+                return { index: i, target: 'body' };
+            }
+        }
+        return null;
+    }
+
+    function onPointerDown(e) {
+        e.preventDefault();
+        const { cx, cy } = getCanvasCoords(e);
+        const hit = hitTest(cx, cy);
+        if (hit) {
+            dragIndex = hit.index;
+            dragTarget = hit.target;
+            isDragging = true;
+            canvas.style.cursor = 'grabbing';
+            if (hit.target === 'body') {
+                const v = vectors[hit.index];
+                const logical = toLogical(cx, cy);
+                const midX = (v.startX + v.endX) / 2;
+                const midY = (v.startY + v.endY) / 2;
+                dragOffsetX = logical.x - midX;
+                dragOffsetY = logical.y - midY;
+            }
+            draw();
+        }
+    }
+
+    function onPointerMove(e) {
+        e.preventDefault();
+        const { cx, cy } = getCanvasCoords(e);
+        if (isDragging && dragIndex !== null) {
+            const v = vectors[dragIndex];
+            const logical = toLogical(cx, cy);
+            if (dragTarget === 'start') {
+                const clamped = clampLogical(logical.x, logical.y);
+                v.startX = clamped.x;
+                v.startY = clamped.y;
+            } else if (dragTarget === 'end') {
+                const clamped = clampLogical(logical.x, logical.y);
+                v.endX = clamped.x;
+                v.endY = clamped.y;
+            } else if (dragTarget === 'body') {
+                const midX = (v.startX + v.endX) / 2;
+                const midY = (v.startY + v.endY) / 2;
+                const newMidX = logical.x - dragOffsetX;
+                const newMidY = logical.y - dragOffsetY;
+                const diffX = newMidX - midX;
+                const diffY = newMidY - midY;
+                let newStartX = v.startX + diffX;
+                let newStartY = v.startY + diffY;
+                let newEndX = v.endX + diffX;
+                let newEndY = v.endY + diffY;
+                const margin = 0.3;
+                const minX = X_MIN + margin, maxX = X_MAX - margin;
+                const minY = Y_MIN + margin, maxY = Y_MAX - margin;
+                const minVX = Math.min(newStartX, newEndX);
+                const maxVX = Math.max(newStartX, newEndX);
+                const minVY = Math.min(newStartY, newEndY);
+                const maxVY = Math.max(newStartY, newEndY);
+                let shiftX = 0, shiftY = 0;
+                if (minVX < minX) shiftX = minX - minVX;
+                else if (maxVX > maxX) shiftX = maxX - maxVX;
+                if (minVY < minY) shiftY = minY - minVY;
+                else if (maxVY > maxY) shiftY = maxY - maxVY;
+                newStartX += shiftX;
+                newStartY += shiftY;
+                newEndX += shiftX;
+                newEndY += shiftY;
+                v.startX = newStartX;
+                v.startY = newStartY;
+                v.endX = newEndX;
+                v.endY = newEndY;
+            }
+            draw();
+            updateUI();
+        } else {
+            const hit = hitTest(cx, cy);
+            canvas.style.cursor = hit ? 'grab' : 'default';
+        }
+    }
+
+    function onPointerUp(e) {
+        e.preventDefault();
+        if (isDragging) {
+            isDragging = false;
+            dragIndex = null;
+            dragTarget = null;
+            canvas.style.cursor = 'default';
+            draw();
+            updateUI();
+        }
+    }
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onPointerDown(e); });
+    window.addEventListener('touchmove', (e) => { e.preventDefault(); onPointerMove(e); });
+    window.addEventListener('touchend', (e) => { e.preventDefault(); onPointerUp(e); });
+
+    // ================================================================
+    //  控制函数
+    // ================================================================
+    function addVector() {
+        if (vectors.length >= MAX_VECTORS) return;
+        const idx = vectors.length;
+        const color = COLORS[idx % COLORS.length];
+        const startX = (Math.random() - 0.5) * 2;
+        const startY = (Math.random() - 0.5) * 2;
+        const endX = startX + 2 + Math.random() * 3;
+        const endY = startY + 1 + Math.random() * 3;
+        vectors.push({
+            id: nextId++,
+            startX: startX,
+            startY: startY,
+            endX: endX,
+            endY: endY,
+            color: color.main,
+            label: color.label,
+        });
+        draw();
+        updateUI();
+    }
+
+    function removeVector() {
+        if (vectors.length === 0) return;
+        vectors.pop();
+        draw();
+        updateUI();
+    }
+
+    function resetVectors() {
+        vectors = [];
+        nextId = 1;
+        draw();
+        updateUI();
+    }
+
+    addBtn.addEventListener('click', addVector);
+    removeBtn.addEventListener('click', removeVector);
+    resetBtn.addEventListener('click', resetVectors);
+
+    draw();
+    updateUI();
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => { draw(); }, 100);
+    });
+    window.addEventListener('load', () => { draw(); });
+</script>
+</body>
+</html>

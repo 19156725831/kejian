@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>滑滑梯 · 拉格朗日量演示</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    min-height:100vh;padding:16px;
+    font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:radial-gradient(1200px 700px at 15% -10%,#eef5ff 0%,#f5f8fd 45%,#e9eff8 100%);
+    color:#0f172a;
+  }
+  .app{max-width:1560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+
+  /* ---------- 顶部数据栏 ---------- */
+  .databar{
+    display:flex;gap:12px;flex-wrap:wrap;
+    background:#fff;border-radius:20px;padding:16px 18px;
+    box-shadow:0 14px 40px rgba(30,58,138,.10),0 2px 8px rgba(30,58,138,.05);
+  }
+  .datum{
+    flex:1 1 130px;min-width:118px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:10px 8px;border-radius:14px;
+    background:linear-gradient(180deg,#f8fbff,#eef4fd);
+    box-shadow:inset 0 0 0 1px #e3edfb;
+  }
+  .datum .formula{
+    font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:#7c8aa5;letter-spacing:.3px;margin-bottom:6px;white-space:nowrap;
+  }
+  .datum .value{
+    font:700 27px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:#0f172a;letter-spacing:-.5px;white-space:nowrap;
+  }
+  .datum .value span{font-size:14px;font-weight:600;color:#94a3b8;margin-left:3px;}
+  .datum.v .value{color:#0f172a;}
+  .datum.h .value{color:#b45309;}
+  .datum.ek .value{color:#0369a1;}
+  .datum.ep .value{color:#6d28d9;}
+  .datum.e .value{color:#047857;}
+
+  /* ---------- 主体 ---------- */
+  .main{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+  .stage{
+    flex:1 1 700px;min-width:300px;
+    background:#fff;border-radius:22px;padding:12px;
+    box-shadow:0 14px 44px rgba(30,58,138,.10),0 2px 8px rgba(30,58,138,.05);
+  }
+  canvas{width:100%;height:auto;display:block;border-radius:16px;}
+  .panel{
+    flex:0 0 330px;min-width:280px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .card{
+    background:#fff;border-radius:18px;padding:16px 16px 18px;
+    box-shadow:0 10px 30px rgba(30,58,138,.08),0 2px 6px rgba(30,58,138,.04);
+  }
+  .card h3{
+    margin-bottom:12px;font-size:13.5px;letter-spacing:.4px;
+    display:flex;align-items:center;gap:8px;color:#1e293b;
+  }
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;}
+  .dot.blue{background:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.16);}
+  .dot.purple{background:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.16);}
+  .dot.green{background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.16);}
+  .dot.amber{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.16);}
+  .row{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 4px;}
+  .row label{font-size:13.5px;color:#475569;}
+  .row output{
+    font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:#1d4ed8;background:#eff6ff;border-radius:6px;padding:2px 9px;
+  }
+  .row.p output{color:#6d28d9;background:#f5f3ff;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:7px;border-radius:99px;
+    background:linear-gradient(90deg,#dbeafe,#e2e8f0);outline:none;margin:2px 0 4px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:19px;height:19px;border-radius:50%;
+    background:#fff;border:3px solid #3b82f6;cursor:pointer;
+    box-shadow:0 2px 6px rgba(59,130,246,.35);transition:transform .12s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.13);}
+  input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;background:#fff;
+    border:3px solid #3b82f6;cursor:pointer;box-shadow:0 2px 6px rgba(59,130,246,.35);
+  }
+  input[type=range].purple::-webkit-slider-thumb{border-color:#8b5cf6;box-shadow:0 2px 6px rgba(139,92,246,.35);}
+  input[type=range].purple::-moz-range-thumb{border-color:#8b5cf6;}
+
+  /* ---------- 速度控制 ---------- */
+  .speed-row{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .speed-label{font-size:13px;color:#475569;font-weight:600;}
+  .speed-btns{display:flex;gap:6px;}
+  .speed-btn{
+    border:none;background:#f1f5f9;color:#475569;
+    border-radius:9px;padding:6px 11px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+    transition:background .15s,color .15s,box-shadow .15s,transform .1s;
+  }
+  .speed-btn:hover{background:#e2e8f0;}
+  .speed-btn:active{transform:scale(.96);}
+  .speed-btn.active{
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+    color:#fff;
+    box-shadow:0 3px 10px rgba(37,99,235,.32);
+  }
+
+  /* ---------- 按钮组 ---------- */
+  .btns{display:flex;gap:8px;}
+  button{
+    border:none;border-radius:12px;padding:12px 8px;
+    font-size:13.5px;font-weight:700;
+    cursor:pointer;font-family:inherit;
+    transition:transform .1s,box-shadow .15s,filter .15s,opacity .15s,background .15s;
+  }
+  button:active:not(:disabled){transform:translateY(1px) scale(.98);}
+  button:disabled{opacity:.4;cursor:not-allowed;filter:none!important;}
+  .btn-primary{
+    flex:1.15;
+    background:linear-gradient(135deg,#3b82f6,#2563eb);
+    color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.32);
+  }
+  .btn-primary:hover:not(:disabled){filter:brightness(1.06);}
+  .btn-ghost{
+    flex:1;background:#f1f5f9;color:#334155;
+    box-shadow:inset 0 0 0 1px #e2e8f0;
+  }
+  .btn-ghost:hover:not(:disabled){background:#e8eef6;}
+
+  .tip{font-size:12.5px;line-height:1.75;color:#64748b;margin-top:11px;}
+  .tip b{color:#334155;}
+
+  #lag{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:14px;line-height:1.85;color:#334155;
+  }
+  #lag .lag-title{font-size:12.5px;color:#94a3b8;margin-bottom:4px;}
+  #lag .lag-formula{font-size:14.5px;color:#334155;}
+  #lag .lag-expand{font-size:14px;color:#64748b;}
+  #lag .lag-value{font-size:19px;font-weight:700;color:#1d4ed8;margin-top:4px;}
+  .tagline{font-size:12.5px;color:#94a3b8;text-align:center;padding-bottom:6px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ====== 顶部实时数据 ====== -->
+  <header class="databar">
+    <div class="datum v">
+      <div class="formula">v = ṡ</div>
+      <div class="value" id="d-v">0.00<span>m/s</span></div>
+    </div>
+    <div class="datum h">
+      <div class="formula">h = y</div>
+      <div class="value" id="d-h">0.00<span>m</span></div>
+    </div>
+    <div class="datum ek">
+      <div class="formula">Eₖ = ½ m v²</div>
+      <div class="value" id="d-ek">0.00<span>J</span></div>
+    </div>
+    <div class="datum ep">
+      <div class="formula">Eₚ = m g h</div>
+      <div class="value" id="d-ep">0.00<span>J</span></div>
+    </div>
+    <div class="datum e">
+      <div class="formula">E = Eₖ + Eₚ</div>
+      <div class="value" id="d-e">0.00<span>J</span></div>
+    </div>
+  </header>
+
+  <!-- ====== 主体 ====== -->
+  <div class="main">
+
+    <div class="stage">
+      <canvas id="cv" width="1200" height="780"></canvas>
+    </div>
+
+    <aside class="panel">
+
+      <div class="card">
+        <h3><span class="dot blue"></span>左斜面（物块起始端）</h3>
+        <div class="row">
+          <label>倾角 θ₁</label><output id="o-th1">0°</output>
+        </div>
+        <input type="range" id="th1" min="0" max="90" step="1" value="0">
+        <div class="row">
+          <label>摩擦系数 μ₁</label><output id="o-mu1">0.00</output>
+        </div>
+        <input type="range" id="mu1" min="0" max="1" step="0.01" value="0">
+      </div>
+
+      <div class="card">
+        <h3><span class="dot purple"></span>右斜面（另一端）</h3>
+        <div class="row p">
+          <label>倾角 θ₂</label><output id="o-th2">0°</output>
+        </div>
+        <input type="range" class="purple" id="th2" min="0" max="90" step="1" value="0">
+        <div class="row p">
+          <label>摩擦系数 μ₂</label><output id="o-mu2">0.00</output>
+        </div>
+        <input type="range" class="purple" id="mu2" min="0" max="1" step="0.01" value="0">
+      </div>
+
+      <div class="card">
+        <h3><span class="dot amber"></span>播放控制</h3>
+        <div class="speed-row">
+          <span class="speed-label">时间倍率</span>
+          <div class="speed-btns">
+            <button class="speed-btn active" data-speed="1">1×</button>
+            <button class="speed-btn" data-speed="0.5">0.5×</button>
+            <button class="speed-btn" data-speed="0.25">0.25×</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn-primary" id="btn-go">松手</button>
+          <button class="btn-ghost" id="btn-pause" disabled>暂停</button>
+          <button class="btn-ghost" id="btn-reset">重置</button>
+        </div>
+        <p class="tip">
+          <b>玩法：</b>先调好两侧角度、摩擦系数和播放速度，再点 <b>松手</b>。
+          物块从左侧顶端附近下滑，经底部圆弧过渡冲上右斜面；
+          若冲出顶端则会飞出去并消失。
+        </p>
+      </div>
+
+      <div class="card">
+        <h3><span class="dot green"></span>拉格朗日量</h3>
+        <div id="lag"></div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <div class="tagline">V 形双斜面 · 圆角过渡 · 能量与摩擦演示</div>
+</div>
+
+<script>
+/* =========================================================
+   常量
+   ========================================================= */
+const G          = 9.8;    // 重力加速度
+const M          = 1.0;    // 物块质量 (kg)
+const L          = 4.8;    // 斜面长度 (m)
+const BLK        = 0.26;   // 物块边长 (m)
+const START_GAP  = 0.12;   // 物块上坡边缘距左顶端的间隙 (m)
+const U0         = BLK / 2 + START_GAP;   // 起始弧长坐标
+
+/* =========================================================
+   画布
+   ---------------------------------------------------------
+   水平方向：让板子在 0° 时刚好顶到左右边界
+   垂直方向：给 θ=90° 留出足够高度
+   ========================================================= */
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const APEX_X = W / 2;
+const APEX_Y = H - 72;
+const SIDE_CLEAR = 8;   // 线帽半径，正好顶到边界
+const TOP_CLEAR  = 48;
+
+const SCALE = Math.min(
+  (W / 2 - SIDE_CLEAR) / L,
+  (APEX_Y - TOP_CLEAR) / L
+);
+
+function P(x, y) {
+  return [APEX_X + x * SCALE, APEX_Y - y * SCALE];
+}
+
+/* =========================================================
+   状态
+   ========================================================= */
+const S = {
+  th1: 0, th2: 0,
+  mu1: 0.0, mu2: 0.0,
+  mode: 'idle',        // idle | sliding | flying | gone
+  running: false,
+  speed: 1.0,          // 时间倍率
+  u: U0,               // 沿路径的弧长位置
+  v: 0,                // 沿路径速度
+  fx: 0, fy: 0, fvx: 0, fvy: 0,
+  opacity: 1
+};
+
+/* =========================================================
+   圆角几何
+   ========================================================= */
+function computeFillet() {
+  const sum = S.th1 + S.th2;
+  if (sum < 0.03) {
+    return { R: 0, t: 0, C: [0, 0], phi0: 0, sweep: 0, active: false };
+  }
+  const halfSum = Math.min(sum / 2, Math.PI / 2 - 1e-3);
+  const tanHalf = Math.tan(halfSum);
+
+  const R = Math.min(0.28, (L * 0.9) / tanHalf);
+  const t = R * tanHalf;
+  const D = R / Math.cos(halfSum);
+
+  const d1x = -Math.cos(S.th1), d1y = Math.sin(S.th1);
+  const d2x =  Math.cos(S.th2), d2y = Math.sin(S.th2);
+  const bx = d1x + d2x, by = d1y + d2y;
+  const bmag = Math.hypot(bx, by) || 1;
+  const C = [D * bx / bmag, D * by / bmag];
+
+  const P1x = -t * Math.cos(S.th1), P1y = t * Math.sin(S.th1);
+  const phi0 = Math.atan2(P1y - C[1], P1x - C[0]);
+
+  return { R, t, C, phi0, sweep: sum, active: true };
+}
+
+function pathGeometry() {
+  const Gf = computeFillet();
+  const L1 = L - Gf.t;
+  const arcLen = Gf.R * Gf.sweep;
+  const L2 = L - Gf.t;
+  return { Gf, L1, arcLen, L2, total: L1 + arcLen + L2 };
+}
+
+/* =========================================================
+   由弧长坐标 u 求物块中心的物理坐标与姿态角
+   ========================================================= */
+function getBlockPos(u, geo) {
+  const { Gf, L1, arcLen, L2 } = geo;
+  const half = BLK / 2;
+
+  // —— 左斜面 ——
+  if (u <= L1) {
+    const w = Math.max(0, Math.min(L1, u));
+    const cosT = Math.cos(S.th1), sinT = Math.sin(S.th1);
+    const sx = -L * cosT + w * cosT;
+    const sy =  L * sinT - w * sinT;
+    return { x: sx + half * sinT, y: sy + half * cosT, rot: S.th1 };
+  }
+
+  // —— 底部圆弧 ——
+  if (u <= L1 + arcLen) {
+    const w  = u - L1;
+    const phi = Gf.phi0 + w / Gf.R;
+    const c = Math.cos(phi), s = Math.sin(phi);
+    return {
+      x: Gf.C[0] + (Gf.R - half) * c,
+      y: Gf.C[1] + (Gf.R - half) * s,
+      rot: -Math.atan2(c, -s)
+    };
+  }
+
+  // —— 右斜面 ——
+  const w = Math.max(0, Math.min(L2, u - L1 - arcLen));
+  const cosT = Math.cos(S.th2), sinT = Math.sin(S.th2);
+  const sx = Gf.t * cosT + w * cosT;
+  const sy = Gf.t * sinT + w * sinT;
+  return { x: sx - half * sinT, y: sy + half * cosT, rot: -S.th2 };
+}
+
+/* =========================================================
+   物理
+   ========================================================= */
+function stepSliding(dt) {
+  const geo = pathGeometry();
+  const { Gf, L1, arcLen, total } = geo;
+
+  const onLeftRamp  = S.u <= L1;
+  const onArc       = S.u > L1 && S.u <= L1 + arcLen;
+  const onRightRamp = S.u > L1 + arcLen;
+  const onRamp = onLeftRamp || onRightRamp;
+
+  // 切线角 ψ
+  let psi;
+  if (onLeftRamp) {
+    psi = -S.th1;
+  } else if (onArc) {
+    const w = S.u - L1;
+    const phi = Gf.phi0 + w / Gf.R;
+    psi = Math.atan2(Math.cos(phi), -Math.sin(phi));
+  } else {
+    psi = S.th2;
+  }
+
+  const aG = -G * Math.sin(psi);
+  const mu = onLeftRamp ? S.mu1 : (onRightRamp ? S.mu2 : 0);
+  const fMax = onRamp ? mu * G * Math.abs(Math.cos(psi)) : 0;
+
+  let a;
+  if (Math.abs(S.v) < 1e-6) {
+    if (onRamp && Math.abs(aG) <= fMax + 1e-9) return;   // 静摩擦锁住
+    a = aG - (onRamp ? Math.sign(aG) * fMax : 0);
+  } else {
+    a = aG - (onRamp ? Math.sign(S.v) * fMax : 0);
+  }
+
+  let vNew = S.v + a * dt;
+  if (S.v > 0 && vNew < 0) vNew = 0;
+  if (S.v < 0 && vNew > 0) vNew = 0;
+
+  // 梯形法（对匀加速精确 → 机械能不漂移）
+  let uNew = S.u + 0.5 * (S.v + vNew) * dt;
+
+  // —— 从左顶端飞出 ——
+  if (uNew < 0) {
+    if (vNew < 0) { launchFromLeftTop(); return; }
+    uNew = 0; vNew = 0;
+  }
+
+  // —— 从右顶端飞出 ——
+  if (uNew > total) {
+    if (vNew > 0) { launchFromRightTop(); return; }
+    uNew = total; vNew = 0;
+  }
+
+  S.u = uNew;
+  S.v = vNew;
+}
+
+function launchFromLeftTop() {
+  const cosT = Math.cos(S.th1), sinT = Math.sin(S.th1);
+  const half = BLK / 2;
+
+  S.fx  = -L * cosT + half * sinT;
+  S.fy  =  L * sinT + half * cosT;
+  S.fvx = S.v * cosT;
+  S.fvy = -S.v * sinT;
+  S.mode = 'flying';
+  S.opacity = 1;
+}
+
+function launchFromRightTop() {
+  const cosT = Math.cos(S.th2), sinT = Math.sin(S.th2);
+  const half = BLK / 2;
+
+  S.fx  = L * cosT - half * sinT;
+  S.fy  = L * sinT + half * cosT;
+  S.fvx = S.v * cosT;
+  S.fvy = S.v * sinT;
+  S.mode = 'flying';
+  S.opacity = 1;
+}
+
+function stepFlying(dt) {
+  const oldVy = S.fvy;
+  S.fvy -= G * dt;
+  S.fy  += 0.5 * (oldVy + S.fvy) * dt;   // 梯形法
+  S.fx  += S.fvx * dt;
+
+  const xLim = (W / 2) / SCALE + 0.4;
+  const yTop =  APEX_Y / SCALE + 0.4;
+  const yBot = (APEX_Y - H) / SCALE - 0.4;
+
+  let out = 0;
+  if (S.fx < -xLim) out = Math.max(out, -xLim - S.fx);
+  if (S.fx >  xLim) out = Math.max(out,  S.fx - xLim);
+  if (S.fy >  yTop) out = Math.max(out,  S.fy - yTop);
+  if (S.fy <  yBot) out = Math.max(out,  yBot - S.fy);
+
+  if (out > 0) {
+    S.opacity -= dt * 3.5;
+    if (S.opacity <= 0) {
+      S.opacity = 0;
+      S.mode = 'gone';
+      S.running = false;
+      updateButtons();
+    }
+  }
+}
+
+function stepPhysics(dt) {
+  if (S.mode === 'sliding') stepSliding(dt);
+  else if (S.mode === 'flying') stepFlying(dt);
+}
+
+/* =========================================================
+   绘制
+   ========================================================= */
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x,     y + h, r);
+  ctx.arcTo(x,     y + h, x,     y,     r);
+  ctx.arcTo(x,     y,     x + w, y,     r);
+  ctx.closePath();
+}
+
+function drawBackground() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0,    '#f2f8ff');
+  g.addColorStop(0.55, '#e9f1fc');
+  g.addColorStop(1,    '#dee8f6');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  const rg = ctx.createRadialGradient(APEX_X, APEX_Y - 90, 30, APEX_X, APEX_Y - 90, 600);
+  rg.addColorStop(0, 'rgba(255,255,255,0.78)');
+  rg.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function traceRampPath() {
+  const geo = pathGeometry();
+  const { Gf, arcLen } = geo;
+
+  ctx.beginPath();
+
+  const [lTx, lTy] = P(-L * Math.cos(S.th1), L * Math.sin(S.th1));
+  ctx.moveTo(lTx, lTy);
+
+  const p1x = Gf.active ? -Gf.t * Math.cos(S.th1) : 0;
+  const p1y = Gf.active ?  Gf.t * Math.sin(S.th1) : 0;
+  const [P1x, P1y] = P(p1x, p1y);
+  ctx.lineTo(P1x, P1y);
+
+  if (Gf.active && arcLen > 0.001) {
+    const steps = 36;
+    for (let i = 1; i <= steps; i++) {
+      const w = (i / steps) * arcLen;
+      const phi = Gf.phi0 + w / Gf.R;
+      const wx = Gf.C[0] + Gf.R * Math.cos(phi);
+      const wy = Gf.C[1] + Gf.R * Math.sin(phi);
+      const [px, py] = P(wx, wy);
+      ctx.lineTo(px, py);
+    }
+  } else {
+    const [ax, ay] = P(0, 0);
+    ctx.lineTo(ax, ay);
+  }
+
+  const [rTx, rTy] = P(L * Math.cos(S.th2), L * Math.sin(S.th2));
+  ctx.lineTo(rTx, rTy);
+}
+
+function drawRamps() {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 16;
+  ctx.shadowColor = 'rgba(30,58,138,0.25)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 5;
+  traceRampPath();
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0,    '#3b82f6');
+  grad.addColorStop(0.45, '#6366f1');
+  grad.addColorStop(1,    '#8b5cf6');
+  ctx.strokeStyle = grad;
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 4.5;
+  ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+  traceRampPath();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawAngleArcs() {
+  const a = P(0, 0);
+  const R = 60;
+
+  ctx.save();
+  ctx.lineWidth = 2.5;
+  ctx.font = '700 15px system-ui,-apple-system,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (S.th1 > 0.02) {
+    ctx.beginPath();
+    ctx.arc(a[0], a[1], R, Math.PI, Math.PI + S.th1, false);
+    ctx.strokeStyle = '#2563eb';
+    ctx.stroke();
+
+    const mid = Math.PI + S.th1 / 2;
+    ctx.fillStyle = '#1d4ed8';
+    ctx.fillText(Math.round(S.th1 * 180 / Math.PI) + '°',
+      a[0] + Math.cos(mid) * (R + 30),
+      a[1] + Math.sin(mid) * (R + 30));
+  }
+
+  if (S.th2 > 0.02) {
+    ctx.beginPath();
+    ctx.arc(a[0], a[1], R, -S.th2, 0, false);
+    ctx.strokeStyle = '#7c3aed';
+    ctx.stroke();
+
+    const mid = -S.th2 / 2;
+    ctx.fillStyle = '#6d28d9';
+    ctx.fillText(Math.round(S.th2 * 180 / Math.PI) + '°',
+      a[0] + Math.cos(mid) * (R + 30),
+      a[1] + Math.sin(mid) * (R + 30));
+  }
+
+  ctx.restore();
+}
+
+function drawBlock() {
+  if (S.mode === 'gone') return;
+
+  let wx, wy, rot, op;
+
+  if (S.mode === 'flying') {
+    wx = S.fx; wy = S.fy;
+    // 用速度方向决定姿态
+    rot = -Math.atan2(S.fvx, S.fvy) + Math.PI / 2;
+    op  = S.opacity;
+  } else {
+    const geo = pathGeometry();
+    const pos = getBlockPos(S.u, geo);
+    wx = pos.x; wy = pos.y; rot = pos.rot; op = 1;
+  }
+
+  const [sx, sy] = P(wx, wy);
+  const size = BLK * SCALE;
+  const r = size * 0.22;
+
+  ctx.save();
+  ctx.globalAlpha = op;
+
+  // 投影
+  ctx.save();
+  ctx.translate(sx + 2, sy + 5);
+  ctx.rotate(rot);
+  roundRect(-size/2, -size/2, size, size, r);
+  ctx.fillStyle = 'rgba(15,23,42,0.18)';
+  ctx.filter = 'blur(4px)';
+  ctx.fill();
+  ctx.restore();
+
+  // 本体
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(rot);
+
+  const grd = ctx.createLinearGradient(0, -size/2, 0, size/2);
+  grd.addColorStop(0,    '#fdba74');
+  grd.addColorStop(0.42, '#fb923c');
+  grd.addColorStop(1,    '#ea580c');
+
+  roundRect(-size/2, -size/2, size, size, r);
+  ctx.fillStyle = grd;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(124,45,18,0.55)';
+  ctx.stroke();
+
+  roundRect(-size/2 + 4, -size/2 + 4, size - 8, size * 0.26, r * 0.7);
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.fill();
+
+  ctx.restore();
+  ctx.restore();
+}
+
+function render() {
+  drawBackground();
+  drawRamps();
+  drawAngleArcs();
+  drawBlock();
+}
+
+/* =========================================================
+   数据面板
+   ========================================================= */
+const dV  = document.getElementById('d-v');
+const dH  = document.getElementById('d-h');
+const dEk = document.getElementById('d-ek');
+const dEp = document.getElementById('d-ep');
+const dE  = document.getElementById('d-e');
+const lagEl = document.getElementById('lag');
+
+function currentKinematics() {
+  let h, v;
+  if (S.mode === 'flying' || S.mode === 'gone') {
+    h = S.fy;
+    v = Math.hypot(S.fvx, S.fvy);
+  } else {
+    const geo = pathGeometry();
+    const pos = getBlockPos(S.u, geo);
+    h = pos.y;
+    v = Math.abs(S.v);
+  }
+  const Ek = 0.5 * M * v * v;
+  const Ep = M * G * h;
+  return { h, v, Ek, Ep, E: Ek + Ep };
+}
+
+function fmt(x, d = 2) {
+  return (Math.abs(x) < 1e-9 ? 0 : x).toFixed(d);
+}
+
+function updateDataPanel() {
+  const { h, v, Ek, Ep, E } = currentKinematics();
+
+  dV.innerHTML  = fmt(v)  + '<span>m/s</span>';
+  dH.innerHTML  = fmt(h)  + '<span>m</span>';
+  dEk.innerHTML = fmt(Ek) + '<span>J</span>';
+  dEp.innerHTML = fmt(Ep) + '<span>J</span>';
+  dE.innerHTML  = fmt(E)  + '<span>J</span>';
+
+  if (S.mode === 'gone') {
+    lagEl.innerHTML = '<div class="lag-title">物块已消失</div>';
+    return;
+  }
+
+  if (S.mode === 'flying') {
+    const T = 0.5 * M * (S.fvx * S.fvx + S.fvy * S.fvy);
+    const V = M * G * S.fy;
+    const Lg = T - V;
+    lagEl.innerHTML =
+      '<div class="lag-title">自由飞行 · 笛卡尔坐标</div>' +
+      '<div class="lag-formula">L = ½m(vx² + vy²) − m g y</div>' +
+      '<div class="lag-expand">  = ' + fmt(T, 3) + ' − ' + fmt(V, 3) + '</div>' +
+      '<div class="lag-value">  = ' + fmt(Lg, 3) + ' J</div>';
+    return;
+  }
+
+  const geo = pathGeometry();
+  const onArc = S.u > geo.L1 && S.u <= geo.L1 + geo.arcLen;
+  const onLeft = S.u <= geo.L1;
+  const where = onLeft ? '左斜面' : (onArc ? '底部圆角' : '右斜面');
+
+  const T  = 0.5 * M * S.v * S.v;
+  const pos = getBlockPos(S.u, geo);
+  const V  = M * G * pos.y;
+  const Lg = T - V;
+
+  lagEl.innerHTML =
+    '<div class="lag-title">' + where + ' · 弧长坐标 s</div>' +
+    '<div class="lag-formula">L = ½ m ṡ² − m g y(s)</div>' +
+    '<div class="lag-expand">  = ' + fmt(T, 3) + ' − ' + fmt(V, 3) + '</div>' +
+    '<div class="lag-value">  = ' + fmt(Lg, 3) + ' J</div>';
+}
+
+/* =========================================================
+   主循环
+   ========================================================= */
+const FIXED = 1 / 600;
+let lastT = 0, acc = 0, frame = 0;
+
+function loop(t) {
+  if (!lastT) lastT = t;
+  let realDt = (t - lastT) / 1000;
+  lastT = t;
+  if (realDt > 0.1) realDt = 0.1;
+
+  const simDt = realDt * S.speed;
+
+  if (S.running && (S.mode === 'sliding' || S.mode === 'flying')) {
+    acc += simDt;
+    let guard = 0;
+    while (acc >= FIXED && guard++ < 700) {
+      stepPhysics(FIXED);
+      acc -= FIXED;
+    }
+  } else {
+    acc = 0;
+  }
+
+  render();
+  if ((frame++ & 2) === 0) updateDataPanel();
+
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+const el = id => document.getElementById(id);
+const btnGo = el('btn-go');
+const btnPause = el('btn-pause');
+const btnReset = el('btn-reset');
+
+function updateButtons() {
+  const canStart = (S.mode === 'idle' || S.mode === 'gone');
+  const canPause = (S.mode === 'sliding' || S.mode === 'flying');
+
+  btnGo.disabled = !canStart;
+  btnPause.disabled = !canPause;
+
+  if (!S.running && canPause) {
+    btnPause.textContent = '继续';
+  } else {
+    btnPause.textContent = '暂停';
+  }
+}
+
+el('th1').addEventListener('input', e => {
+  S.th1 = (+e.target.value) * Math.PI / 180;
+  el('o-th1').textContent = e.target.value + '°';
+  updateDataPanel();
+});
+
+el('th2').addEventListener('input', e => {
+  S.th2 = (+e.target.value) * Math.PI / 180;
+  el('o-th2').textContent = e.target.value + '°';
+  updateDataPanel();
+});
+
+el('mu1').addEventListener('input', e => {
+  S.mu1 = +e.target.value;
+  el('o-mu1').textContent = S.mu1.toFixed(2);
+});
+
+el('mu2').addEventListener('input', e => {
+  S.mu2 = +e.target.value;
+  el('o-mu2').textContent = S.mu2.toFixed(2);
+});
+
+/* —— 播放速度 —— */
+const speedBtns = document.querySelectorAll('.speed-btn');
+speedBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    speedBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    S.speed = parseFloat(btn.dataset.speed);
+  });
+});
+
+/* —— 松手 —— */
+btnGo.addEventListener('click', () => {
+  if (S.mode === 'idle' || S.mode === 'gone') {
+    S.mode = 'sliding';
+    S.running = true;
+    S.u = U0;
+    S.v = 0;
+    S.opacity = 1;
+    acc = 0;
+    updateButtons();
+  }
+});
+
+/* —— 暂停 / 继续 —— */
+btnPause.addEventListener('click', () => {
+  if (S.mode === 'sliding' || S.mode === 'flying') {
+    S.running = !S.running;
+    acc = 0;
+    updateButtons();
+  }
+});
+
+/* —— 重置 —— */
+btnReset.addEventListener('click', resetAll);
+
+function resetAll() {
+  S.mode = 'idle';
+  S.running = false;
+  S.u = U0;
+  S.v = 0;
+  S.fx = 0; S.fy = 0; S.fvx = 0; S.fvy = 0;
+  S.opacity = 1;
+  acc = 0;
+  updateDataPanel();
+  updateButtons();
+}
+
+/* =========================================================
+   启动
+   ========================================================= */
+resetAll();
+updateButtons();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

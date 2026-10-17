@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a1220">
+<title>v-t 图面积法推导位移公式</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;}
+  html,body{width:100%;overflow:hidden;}
+  html{height:100%;}
+  body{
+    height:100vh;
+    height:100dvh;
+    background-color:#0a1220;
+    background-image:radial-gradient(circle at 28% 0%,#16294a 0%,#0a1220 55%,#070d17 100%);
+    color:#e8f1ff;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif;
+    -webkit-user-select:none;user-select:none;
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));
+  }
+
+  /* ============== 顶部切换标签 ============== */
+  .tabbar{
+    -webkit-flex:0 0 auto;flex:0 0 auto;
+    display:flex;
+    gap:5px;
+    padding:4px;
+    background:rgba(20,34,58,0.75);
+    border:1px solid rgba(80,130,200,0.16);
+    border-radius:13px;
+  }
+  .tabbar button{
+    -webkit-flex:1 1 0;flex:1 1 0;
+    min-width:0;
+    padding:9px 6px;
+    border:none;
+    background:transparent;
+    color:#7fa2cc;
+    font-size:13.5px;
+    font-weight:700;
+    letter-spacing:.3px;
+    border-radius:10px;
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    transition:background .16s,color .16s,box-shadow .16s;
+  }
+  .tabbar button.on{
+    background:linear-gradient(180deg,rgba(84,210,255,0.24),rgba(84,210,255,0.09));
+    color:#eaf6ff;
+    box-shadow:inset 0 0 0 1px rgba(84,210,255,0.5),0 2px 10px rgba(84,210,255,0.14);
+  }
+  .tabbar button:active{transform:scale(.985);}
+
+  /* ============== 主体左右分栏 ============== */
+  .main{
+    -webkit-flex:1 1 auto;flex:1 1 auto;
+    min-height:0;min-width:0;
+    display:flex;
+    gap:8px;
+  }
+
+  /* ================= 左栏：图形 ================= */
+  .left{
+    -webkit-flex:0 0 44%;flex:0 0 44%;
+    min-width:0;min-height:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .chart-box{
+    -webkit-flex:1 1 auto;flex:1 1 auto;
+    min-height:0;
+    position:relative;
+    border-radius:15px;
+    background:rgba(12,22,40,0.80);
+    border:1px solid rgba(90,140,210,0.18);
+    box-shadow:0 8px 26px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.04);
+    overflow:hidden;
+  }
+  #cv{
+    position:absolute;left:0;top:0;
+    width:100%;height:100%;display:block;
+  }
+
+  /* 滑块 */
+  .slider-card{
+    -webkit-flex:0 0 auto;flex:0 0 auto;
+    background:rgba(20,34,58,0.75);
+    border:1px solid rgba(80,130,200,0.16);
+    border-radius:13px;
+    padding:8px 12px 2px;
+  }
+  .slider-top{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:13px;color:#8fb0d8;letter-spacing:.3px;
+    gap:4px;
+  }
+  .slider-top b{
+    color:#54d2ff;font-size:22px;font-weight:800;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",sans-serif;
+  }
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:32px;background:transparent;outline:none;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg,#2f6fb5,#54d2ff);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:24px;height:24px;border-radius:50%;
+    background:#eaf6ff;
+    border:3px solid #54d2ff;
+    margin-top:-9px;
+    box-shadow:0 2px 10px rgba(84,210,255,0.65);
+  }
+  input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:#2f6fb5;}
+  input[type=range]::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;
+    background:#eaf6ff;border:3px solid #54d2ff;
+  }
+
+  /* ================= 右栏 ================= */
+  .right{
+    -webkit-flex:1 1 auto;flex:1 1 auto;
+    min-width:0;min-height:0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .card{
+    background:rgba(20,34,58,0.75);
+    border:1px solid rgba(80,130,200,0.16);
+    border-radius:13px;
+    padding:11px 13px;
+    min-width:0;
+  }
+  .card-hd{
+    display:flex;align-items:center;gap:7px;
+    font-size:16px;font-weight:700;letter-spacing:.3px;
+    margin-bottom:9px;
+    line-height:1.3;
+  }
+  .card-hd .dot{width:10px;height:10px;border-radius:50%;flex:none;}
+  .rect-card .card-hd{color:#ffb84a;}
+  .formula-card .card-hd,
+  .trap-card .card-hd{color:#54d2ff;}
+  .cmp-card  .card-hd{color:#7fe0a8;}
+
+  .eq{
+    font-size:17px;line-height:1.9;color:#b3cee8;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",-apple-system,sans-serif;
+    letter-spacing:.2px;
+    overflow-wrap:anywhere;word-break:break-word;
+  }
+  .eq.lead{color:#d8e9ff;font-size:19px;font-weight:600;}
+  .eq .k{color:#ffb84a;font-weight:800;}
+  .eq .b{color:#54d2ff;font-weight:800;}
+  .eq .g{color:#7fe0a8;font-weight:800;}
+  .eq .r{color:#ff7b8a;font-weight:800;}
+  .eq.res{
+    margin-top:8px;padding-top:8px;
+    border-top:1px dashed rgba(90,140,210,0.28);
+    font-size:20px;font-weight:700;
+  }
+  .eq.res .val{font-size:30px;}
+  .eq.note{color:#8fb0d8;font-size:15px;line-height:1.75;}
+
+  /* ★ 求和公式：合并成一行，窄屏可横向滚动 */
+  .eq.one-line{
+    font-size:17px;
+    font-weight:700;
+    color:#ffd98a;
+    white-space:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:3px;
+    letter-spacing:0;
+  }
+  .eq.one-line::-webkit-scrollbar{height:3px;}
+  .eq.one-line::-webkit-scrollbar-thumb{background:rgba(255,176,72,0.4);border-radius:3px;}
+
+  /* ---- 矩形卡片：吃掉剩余全部高度 ---- */
+  .rect-card{
+    -webkit-flex:1 1 auto;flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .rect-card::-webkit-scrollbar{width:3px;}
+  .rect-card::-webkit-scrollbar-thumb{background:rgba(90,140,210,0.4);border-radius:3px;}
+
+  .rect-inner{
+    margin:auto 0;
+    width:100%;
+    -webkit-flex-shrink:0;flex-shrink:0;
+  }
+
+  /* 逐项面积网格（支持到100项） */
+  .rect-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(88px,1fr));
+    gap:2px 8px;
+    margin-top:6px;
+  }
+  .rect-grid .cell-item{
+    font-size:11px;
+    line-height:1.5;
+    color:#b3cee8;
+    font-variant-numeric:tabular-nums;
+    font-family:"DIN Alternate","Bahnschrift",-apple-system,sans-serif;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .rect-grid .cell-item .idx{
+    color:#ffb84a;font-weight:800;
+  }
+  .rect-grid .cell-item .area{
+    color:#ffd98a;font-weight:700;
+  }
+
+  /* ---- 底部小角落 ---- */
+  .corner{
+    -webkit-flex:0 0 auto;flex:0 0 auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:8px;
+  }
+  .corner .card{padding:9px 11px;}
+  .corner .card-hd{font-size:13px;margin-bottom:6px;gap:5px;}
+  .corner .card-hd .dot{width:8px;height:8px;}
+  .corner .eq{font-size:13px;line-height:1.7;}
+  .corner .eq.lead{font-size:13.5px;}
+  .corner .eq.note{font-size:11.5px;line-height:1.55;margin-top:3px;}
+  .corner .eq.res{margin-top:5px;padding-top:5px;font-size:13px;}
+  .corner .eq.res .val{font-size:19px;}
+
+  .foot-tip{
+    font-size:11px;color:#4e6a8e;
+    text-align:center;letter-spacing:.3px;
+    padding:0 0 2px;
+    -webkit-flex:0 0 auto;flex:0 0 auto;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ 顶部模式切换 ============ -->
+  <div class="tabbar">
+    <button id="tabUniform" class="on">匀速　s = vt</button>
+    <button id="tabAccel">匀变速　s = v₀t + ½at²</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ============ 左：图形 ============ -->
+    <div class="left">
+      <div class="chart-box" id="chartBox">
+        <canvas id="cv"></canvas>
+      </div>
+
+      <div class="slider-card">
+        <div class="slider-top">
+          <span>矩形个数 n</span>
+          <b id="nVal">4</b>
+        </div>
+        <input type="range" id="slider" min="1" max="100" value="4">
+      </div>
+    </div>
+
+    <!-- ============ 右：公式说明 ============ -->
+    <div class="right">
+
+      <!-- ===== 矩形面积和：占满绝大部分 ===== -->
+      <div class="card rect-card">
+        <div class="rect-inner">
+
+          <div class="card-hd">
+            <span class="dot" style="background:#ffb84a"></span>
+            <span id="cardTitle">矩形面积和 Sₙ</span>
+          </div>
+
+          <div class="eq one-line" id="formulaLine"></div>
+
+          <div id="rectBody"></div>
+
+          <div class="eq res">Sₙ = <span class="val k" id="rectSum">24</span> m</div>
+
+        </div>
+      </div>
+
+      <!-- ===== 底部小角落：匀速模式 ===== -->
+      <div class="corner" id="cornerUniform">
+        <div class="card formula-card">
+          <div class="card-hd"><span class="dot" style="background:#54d2ff"></span>位移公式</div>
+          <div class="eq note" style="margin:0 0 4px">矩形：长 = v　宽 = t</div>
+          <div class="eq">s = 面积 = v · t</div>
+          <div class="eq">&nbsp;&nbsp;= 4 × 6</div>
+          <div class="eq res">s = <span class="val b">24</span> m</div>
+        </div>
+
+        <div class="card cmp-card">
+          <div class="card-hd"><span class="dot" style="background:#7fe0a8"></span>结论</div>
+          <div class="eq">v-t 图中，图线与时间轴围成的<span class="g">面积</span>等于<span class="g">位移</span>。</div>
+          <div class="eq note">
+            匀速直线运动的 v-t 图线是水平直线，围成矩形，
+            面积恒为 v·t，与分成多少份无关。
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 底部小角落：匀变速模式 ===== -->
+      <div class="corner" id="cornerAccel" style="display:none">
+        <div class="card trap-card">
+          <div class="card-hd"><span class="dot" style="background:#54d2ff"></span>梯形面积 S</div>
+          <div class="eq note" style="margin:0 0 4px">上底 v₀　下底 v₀+at　高 t</div>
+          <div class="eq">S = ½·(v₀+v₀+at)·t</div>
+          <div class="eq">&nbsp;&nbsp;= ½ × (2+2+6) × 6</div>
+          <div class="eq">&nbsp;&nbsp;= ½ × <span class="b">10</span> × <span class="b">6</span></div>
+          <div class="eq res">S = <span class="val b">30</span> m</div>
+        </div>
+
+        <div class="card cmp-card">
+          <div class="card-hd"><span class="dot" style="background:#7fe0a8"></span>两者对比</div>
+          <div class="eq">误差 = S − Sₙ</div>
+          <div class="eq">&nbsp;&nbsp;= 30 − <span class="g" id="errA">25.5</span>
+            = <span class="r" id="errB">4.5</span> m</div>
+          <div class="eq note" id="cmpNote">
+            n→∞ 时 (n−1)/n→1，Sₙ → v₀t + ½at²。
+          </div>
+        </div>
+      </div>
+
+      <div class="foot-tip">横屏查看图形更清晰</div>
+
+    </div>
+
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 两种模式的物理参数 ================= */
+  var MODES = {
+    uniform: {
+      v0: 4, a: 0, t: 6, vmax: 5,
+      cardTitle: '矩形面积和 Sₙ（分割求和）',
+      formula: 'Sₙ = Σ(v·Δt) = v·(t/n)·n = v·t = 4 × 6 = 24 m'
+    },
+    accel: {
+      v0: 2, a: 1, t: 6, vmax: 9,
+      cardTitle: '矩形面积和 Sₙ（左端点法）',
+      formula: 'Sₙ = Σ(v₀+a·i·Δt)·Δt = v₀t + ½at²·(n−1)/n = 12 + 18 × (n−1)/n'
+    }
+  };
+
+  /* ★ 默认模式：匀速 */
+  var MODE = 'uniform';
+  var P = MODES[MODE];
+
+  /* ================= 画布 ================= */
+  var cv = document.getElementById('cv');
+  var ctx = cv.getContext('2d');
+  var W = 0, H = 0;
+
+  var DW = 0, DH = 0, OX = 0, OY = 0;
+  var PL = 0, PR = 0, PT = 0, PB = 0;
+
+  var n = 4;
+
+  function X(t) { return OX + PL + (t / P.t) * (DW - PL - PR); }
+  function Y(v) { return OY + DH - PB - (v / P.vmax) * (DH - PT - PB); }
+
+  function fs(scale) {
+    var base = Math.max(10, Math.min(16, Math.min(DW, DH) * 0.052));
+    return Math.round(base * (scale || 1) * 10) / 10;
+  }
+
+  /* ================= 数值格式 ================= */
+  function fmt(x, d) {
+    if (d === undefined) d = 3;
+    var s = Number(x).toFixed(d);
+    if (s.indexOf('.') >= 0) {
+      s = s.replace(/0+$/, '').replace(/\.$/, '');
+    }
+    return s;
+  }
+
+  /* ================= 绘制 ================= */
+  function drawGrid() {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(90,140,200,0.11)';
+    ctx.lineWidth = 1;
+
+    for (var t = 0; t <= P.t; t++) {
+      var x = X(t);
+      ctx.beginPath();
+      ctx.moveTo(x, Y(0));
+      ctx.lineTo(x, Y(P.vmax));
+      ctx.stroke();
+    }
+
+    var vStep = (P.vmax <= 6) ? 1 : 2;
+    for (var v = vStep; v <= P.vmax; v += vStep) {
+      var y = Y(v);
+      ctx.beginPath();
+      ctx.moveTo(X(0), y);
+      ctx.lineTo(X(P.t), y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* 精确面积（曲线下方面积）：匀变速为梯形，匀速时与矩形重合故略去 */
+  function drawTrueArea() {
+    if (P.a === 0) return;
+
+    var vEnd = P.v0 + P.a * P.t;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(X(0), Y(0));
+    ctx.lineTo(X(0), Y(P.v0));
+    ctx.lineTo(X(P.t), Y(vEnd));
+    ctx.lineTo(X(P.t), Y(0));
+    ctx.closePath();
+
+    ctx.fillStyle = 'rgba(90,190,255,0.10)';
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(90,190,255,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 矩形条：左端点法（匀速时每块等高，整体即矩形） */
+  function drawRects(nn) {
+    var dt = P.t / nn;
+    var showStroke = nn <= 46;
+
+    for (var i = 0; i < nn; i++) {
+      var t0 = i * dt;
+      var v = P.v0 + P.a * t0;
+      var x0 = X(t0);
+      var x1 = X(t0 + dt);
+      var yT = Y(v);
+      var yB = Y(0);
+      var w = x1 - x0;
+      if (w < 0.35) { w = 0.35; }
+
+      ctx.fillStyle = 'rgba(255,176,72,0.28)';
+      ctx.fillRect(x0, yT, w, yB - yT);
+
+      if (showStroke && w > 1.1) {
+        ctx.strokeStyle = 'rgba(255,200,120,0.65)';
+        ctx.lineWidth = 0.7;
+        ctx.strokeRect(x0, yT, w, yB - yT);
+      }
+    }
+  }
+
+  /* v-t 图线：匀速为水平线，匀变速为斜直线 */
+  function drawCurve() {
+    var vEnd = P.v0 + P.a * P.t;
+
+    ctx.save();
+    ctx.strokeStyle = '#54d2ff';
+    ctx.lineWidth = Math.max(2.2, Math.min(DW, DH) * 0.012);
+    ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(84,210,255,0.65)';
+    ctx.shadowBlur = 9;
+
+    ctx.beginPath();
+    ctx.moveTo(X(0), Y(P.v0));
+    ctx.lineTo(X(P.t), Y(vEnd));
+    ctx.stroke();
+    ctx.restore();
+
+    var r = Math.max(2.8, Math.min(DW, DH) * 0.014);
+    ctx.fillStyle = '#54d2ff';
+    ctx.beginPath(); ctx.arc(X(0), Y(P.v0), r, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(X(P.t), Y(vEnd), r, 0, 7); ctx.fill();
+  }
+
+  function drawAxes() {
+    ctx.save();
+
+    var x0 = X(0), y0 = Y(0);
+    var xE = X(P.t), yT = Y(P.vmax);
+    var vEnd = P.v0 + P.a * P.t;
+
+    ctx.strokeStyle = 'rgba(160,195,235,0.85)';
+    ctx.lineWidth = 1.8;
+
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, yT - 6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xE + 12, y0); ctx.stroke();
+
+    var ah = Math.max(4, Math.min(DW, DH) * 0.026);
+    ctx.fillStyle = 'rgba(160,195,235,0.85)';
+
+    ctx.beginPath();
+    ctx.moveTo(x0, yT - ah * 2.6);
+    ctx.lineTo(x0 - ah, yT - ah * 0.7);
+    ctx.lineTo(x0 + ah, yT - ah * 0.7);
+    ctx.closePath(); ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(xE + ah * 4.4, y0);
+    ctx.lineTo(xE + ah * 2.3, y0 - ah);
+    ctx.lineTo(xE + ah * 2.3, y0 + ah);
+    ctx.closePath(); ctx.fill();
+
+    var f1 = fs(1.05);
+    ctx.font = 'bold ' + f1 + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.fillStyle = 'rgba(180,210,240,0.95)';
+    ctx.strokeStyle = 'rgba(150,185,225,0.55)';
+    ctx.lineWidth = 1.2;
+
+    var tick = Math.max(4, Math.min(DW, DH) * 0.028);
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+
+    for (var t = 1; t <= P.t; t++) {
+      var x = X(t);
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + tick); ctx.stroke();
+      ctx.fillText(String(t), x, y0 + tick + 2);
+    }
+    ctx.fillText('0', x0 - f1 * 0.9, y0 + tick + 2);
+
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    var vStep = (P.vmax <= 6) ? 1 : 2;
+    for (var v = vStep; v <= P.vmax; v += vStep) {
+      var y = Y(v);
+      ctx.beginPath(); ctx.moveTo(x0 - tick, y); ctx.lineTo(x0, y); ctx.stroke();
+      ctx.fillText(String(v), x0 - tick - 3, y);
+    }
+
+    var fAx = fs(1.55);
+
+    ctx.font = 'bold ' + fAx + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.fillStyle = '#8fc9ff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('v', x0 + fAx * 0.35, yT - fAx * 0.15);
+
+    var fu = fs(1.0);
+    ctx.font = 'bold ' + fu + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.fillStyle = 'rgba(143,201,255,0.85)';
+    ctx.fillText('/(m·s⁻¹)', x0 + fAx * 0.35 + fAx * 0.85, yT - fAx * 0.25);
+
+    ctx.font = 'bold ' + fAx + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.fillStyle = '#8fc9ff';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText('t', W - fu * 2.8, y0 + tick + 2);
+
+    ctx.font = 'bold ' + fu + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.fillStyle = 'rgba(143,201,255,0.85)';
+    ctx.textAlign = 'left';
+    ctx.fillText('/s', W - fu * 2.5, y0 + tick + 2 + fAx * 0.18);
+
+    /* 图线标注 */
+    var fk = fs(1.1);
+    ctx.font = 'bold ' + fk + 'px -apple-system,BlinkMacSystemFont,sans-serif';
+    ctx.fillStyle = '#54d2ff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+
+    if (P.a === 0) {
+      ctx.fillText('v = ' + P.v0 + ' m/s', X(0) + fk * 0.6, Y(P.v0) - fk * 0.35);
+    } else {
+      ctx.fillText('v₀', X(0) + fk * 0.5, Y(P.v0) - fk * 0.3);
+      ctx.textAlign = 'right';
+      ctx.fillText('v₀+at', X(P.t) - fk * 0.4, Y(vEnd) - fk * 0.65);
+    }
+
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawGrid();
+    drawTrueArea();
+    drawRects(n);
+    drawCurve();
+    drawAxes();
+  }
+
+  /* ================= 公式与数值 ================= */
+  function updateInfo() {
+    var dt = P.t / n;
+    var sum = 0;
+
+    for (var i = 0; i < n; i++) {
+      sum += (P.v0 + P.a * i * dt) * dt;
+    }
+
+    document.getElementById('nVal').textContent = n;
+
+    var html = '';
+
+    /* 始终逐项列出（n ≤ 100） */
+    html += '<div class="eq note" style="margin-top:6px">'
+         +  'n = ' + n + '，Δt = ' + P.t + '/' + n + ' = ' + fmt(dt)
+         +  ' s，每份面积：'
+         +  '</div>';
+    html += '<div class="rect-grid">';
+
+    for (var k = 0; k < n; k++) {
+      var t0 = k * dt;
+      var v  = P.v0 + P.a * t0;
+      var s  = v * dt;
+
+      html += '<div class="cell-item">'
+           +  '<span class="idx">' + (k + 1) + '.</span> '
+           +  fmt(v) + '×' + fmt(dt) + '='
+           +  '<span class="area">' + fmt(s) + '</span>'
+           +  '</div>';
+    }
+
+    html += '</div>';
+
+    html += '<div class="eq" style="margin-top:7px;color:#d8e9ff">'
+         +  '求和 S<sub>' + n + '</sub> = ' + fmt(sum) + ' m'
+         +  '</div>';
+
+    document.getElementById('rectBody').innerHTML = html;
+    document.getElementById('rectSum').textContent = fmt(sum);
+
+    /* 匀变速模式：更新误差卡片 */
+    if (MODE === 'accel') {
+      var exact = P.v0 * P.t + 0.5 * P.a * P.t * P.t;   // 30
+      var err = exact - sum;
+
+      document.getElementById('errA').textContent = fmt(sum);
+      document.getElementById('errB').textContent = fmt(err);
+
+      var note = document.getElementById('cmpNote');
+      if (n >= 100) {
+        note.innerHTML = 'n = 100 时误差仅 <span class="r">' + fmt(err)
+          + '</span> m。n → ∞ 时 Sₙ → v₀t + ½at²。';
+      } else {
+        note.innerHTML = 'n 越大误差越小；n → ∞ 时 (n−1)/n → 1，'
+          + 'Sₙ → v₀t + ½at²。';
+      }
+    }
+  }
+
+  function refresh() {
+    draw();
+    updateInfo();
+  }
+
+  /* ================= 模式切换 ================= */
+  var tabU = document.getElementById('tabUniform');
+  var tabA = document.getElementById('tabAccel');
+
+  function setMode(m) {
+    MODE = m;
+    P = MODES[m];
+
+    tabU.classList.toggle('on', m === 'uniform');
+    tabA.classList.toggle('on', m === 'accel');
+
+    document.getElementById('cardTitle').textContent = P.cardTitle;
+    document.getElementById('formulaLine').textContent = P.formula;
+
+    document.getElementById('cornerUniform').style.display =
+      (m === 'uniform') ? '' : 'none';
+    document.getElementById('cornerAccel').style.display =
+      (m === 'accel') ? '' : 'none';
+
+    refresh();
+  }
+
+  tabU.addEventListener('click', function () { setMode('uniform'); }, false);
+  tabA.addEventListener('click', function () { setMode('accel'); }, false);
+
+  /* ================= 自适应 ================= */
+  function resize() {
+    var box = document.getElementById('chartBox');
+    var w = box.clientWidth;
+    var h = box.clientHeight;
+
+    if (!w || !h) { return; }
+
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    cv.width  = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    W = w; H = h;
+
+    DW = w; DH = h;
+    OX = 0; OY = 0;
+
+    PL = Math.max(w * 0.13, 42);
+    PR = Math.max(w * 0.05, 16);
+    PT = Math.max(h * 0.08, 26);
+    PB = Math.max(h * 0.10, 30);
+
+    refresh();
+  }
+
+  /* ================= 滑块交互 ================= */
+  var slider = document.getElementById('slider');
+
+  slider.addEventListener('input', function () {
+    n = parseInt(slider.value, 10) || 1;
+    refresh();
+  }, false);
+
+  /* ================= 启动 ================= */
+  window.addEventListener('load', resize, false);
+
+  window.addEventListener('orientationchange', function () {
+    setTimeout(resize, 260);
+    setTimeout(resize, 620);
+  }, false);
+
+  var rzTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(resize, 110);
+  }, false);
+
+  if (window.ResizeObserver) {
+    try {
+      new ResizeObserver(function () { resize(); })
+        .observe(document.getElementById('chartBox'));
+    } catch (e) {}
+  }
+
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); }, false);
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); }, false);
+
+  /* ★ 初始化：默认匀速模式 */
+  setMode('uniform');
+  resize();
+})();
+</script>
+</body>
+</html>
