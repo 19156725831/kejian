@@ -1,67 +1,70 @@
 const fs = require('fs');
 const path = require('path');
 
-const ignoreList = ['.git', 'node_modules', '.github'];
+const ignoreDirs = ['.github', '.git', 'node_modules'];
 
-// 生成单目录的index.html
-function genIndexHtml(dirPath) {
-    const items = fs.readdirSync(dirPath, { withFileTypes: true });
-    const folders = [];
-    for (const item of items) {
-        if (!item.isDirectory()) continue;
-        if (ignoreList.includes(item.name)) continue;
-        folders.push(item.name);
+function generateIndexHtml(dirPath) {
+  const items = fs.readdirSync(dirPath, {withFileTypes:true});
+  let folders = [];
+  let files = [];
+
+  for(const item of items) {
+    if(ignoreDirs.includes(item.name)) continue;
+    if(item.name === 'index.html') continue;
+
+    if(item.isDirectory()){
+      folders.push(item);
+    }else{
+      files.push(item);
     }
-    folders.sort();
+  }
 
-    // 生成html内容
-    const links = folders.map(name => `<a href="${encodeURI(name)}/">${name}</a>`).join('\n');
-    const html = `<!DOCTYPE html>
+  let folderHtml = '';
+  for(const d of folders){
+    folderHtml += `<a href="${encodeURIComponent(d.name)}/" class="folder">${d.name}</a>`;
+  }
+
+  let fileHtml = '';
+  for(const f of files){
+    fileHtml += `<a href="${encodeURIComponent(f.name)}" class="file">${f.name}</a>`;
+  }
+
+  const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{padding:2rem;}
-.container{display:flex;flex-wrap:wrap;gap:16px;}
-a{
-  padding:12px 20px;
-  border:1px solid #ddd;
-  border-radius:6px;
-  text-decoration:none;
-  color:#222;
-}
-a:hover{
-  background:#f5f5f5;
-  border-color:#bbb;
-}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, sans-serif}
+body{padding:24px;max-width:1200px;margin:0 auto}
+.folder-wrap{display:grid;grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));gap:12px;margin-bottom:32px}
+.file-wrap{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px,1fr));gap:8px}
+a{display:block;padding:14px 16px;border:1px solid #ddd;border-radius:8px;text-decoration:none;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+a.folder{background:#f6f8fa}
+a:hover{background:#eef2f7;border-color:#999}
 </style>
 </head>
 <body>
-<div class="container">
-${links}
+<div class="folder-wrap">
+${folderHtml}
+</div>
+<div class="file-wrap">
+${fileHtml}
 </div>
 </body>
 </html>`;
-    // 写入当前目录index.html
-    const outPath = path.join(dirPath, "index.html");
-    fs.writeFileSync(outPath, html, "utf8");
-    console.log(`生成: ${outPath}`);
+
+  const outPath = path.join(dirPath, 'index.html');
+  fs.writeFileSync(outPath, html, 'utf8');
+  console.log(`✅ 生成：${outPath}`);
+
+  // 递归子文件夹
+  for(const d of folders){
+    const subDir = path.join(dirPath, d.name);
+    generateIndexHtml(subDir);
+  }
 }
 
-// 递归遍历所有目录
-function walkDir(baseDir) {
-    genIndexHtml(baseDir);
-    const items = fs.readdirSync(baseDir, { withFileTypes: true });
-    for (const item of items) {
-        if (!item.isDirectory()) continue;
-        if (ignoreList.includes(item.name)) continue;
-        const subPath = path.join(baseDir, item.name);
-        walkDir(subPath);
-    }
-}
-
-// 从根目录开始扫描生成所有index.html
-walkDir(__dirname);
-console.log("\n✅ 全部目录 index.html 生成完毕");
+// 从仓库根目录开始扫描
+generateIndexHtml('.');
+console.log('\n🎉 全部目录页面生成完毕');
