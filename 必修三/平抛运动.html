@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>平抛运动演示</title>
+<style>
+  :root{
+    --bg:#0b1020;
+    --bg2:#121a33;
+    --line:rgba(120,160,220,.16);
+    --txt:#e6edf7;
+    --dim:#8ea3c4;
+    --cyan:#38bdf8;
+    --pink:#f472b6;
+    --gold:#fbbf24;
+    --green:#34d399;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(900px 500px at 15% -10%, #1b2a55 0%, transparent 60%),
+      radial-gradient(700px 500px at 100% 110%, #16324a 0%, transparent 55%),
+      var(--bg);
+    color:var(--txt);
+    font-family:"PingFang SC","Microsoft YaHei",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    max-width:1180px;
+    margin:0 auto;
+    padding:22px 18px 30px;
+  }
+  .hero h1{
+    margin:0 0 4px;
+    font-size:clamp(20px,3vw,28px);
+    letter-spacing:.06em;
+    background:linear-gradient(90deg,#7dd3fc,#a5b4fc 45%,#f0abfc);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    font-weight:800;
+  }
+  .hero p{
+    margin:0 0 16px;
+    color:var(--dim);
+    font-size:13px;
+    letter-spacing:.05em;
+  }
+  .main{
+    display:flex;
+    gap:16px;
+    align-items:stretch;
+  }
+  .stage{
+    position:relative;
+    flex:1 1 auto;
+    min-width:0;
+    height:540px;
+    border-radius:18px;
+    background:linear-gradient(180deg,rgba(24,36,68,.75),rgba(12,19,38,.85));
+    border:1px solid var(--line);
+    box-shadow:0 24px 60px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.04);
+    overflow:hidden;
+  }
+  canvas{display:block;width:100%;height:100%;}
+  .legend{
+    position:absolute;
+    left:14px;bottom:12px;
+    display:flex;gap:14px;flex-wrap:wrap;
+    font-size:12px;color:var(--dim);
+    pointer-events:none;
+  }
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .legend i{
+    display:inline-block;width:16px;height:3px;border-radius:2px;
+  }
+  .panel{
+    flex:0 0 272px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    max-height:540px;
+    overflow-y:auto;
+    padding-right:2px;
+  }
+  .panel::-webkit-scrollbar{width:6px;}
+  .panel::-webkit-scrollbar-thumb{background:rgba(120,160,220,.25);border-radius:3px;}
+  .card{
+    background:linear-gradient(180deg,rgba(26,38,70,.8),rgba(14,22,44,.8));
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px;
+  }
+  .card h3{
+    margin:0 0 10px;
+    font-size:12px;
+    letter-spacing:.16em;
+    color:var(--dim);
+    font-weight:600;
+    text-transform:uppercase;
+  }
+  .ctrl{margin-bottom:14px;}
+  .ctrl:last-child{margin-bottom:0;}
+  .ctrl label{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:13px;color:var(--dim);margin-bottom:8px;
+  }
+  .ctrl label b{color:var(--cyan);font-size:13px;font-variant-numeric:tabular-nums;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:4px;border-radius:2px;
+    background:linear-gradient(90deg,#38bdf8,#818cf8);
+    outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:16px;height:16px;border-radius:50%;
+    background:#e6edf7;
+    border:3px solid #38bdf8;
+    box-shadow:0 0 10px rgba(56,189,248,.8);
+    cursor:grab;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px;height:16px;border-radius:50%;
+    background:#e6edf7;border:3px solid #38bdf8;cursor:grab;
+  }
+  .btns{display:flex;gap:8px;margin-top:14px;}
+  button{
+    flex:1;
+    padding:10px 8px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,.04);
+    color:var(--txt);
+    font-size:13px;
+    font-family:inherit;
+    cursor:pointer;
+    transition:.18s;
+    letter-spacing:.05em;
+  }
+  button:hover{background:rgba(255,255,255,.1);border-color:rgba(120,160,220,.4);}
+  button:active{transform:scale(.97);}
+  button.primary{
+    background:linear-gradient(135deg,#0ea5e9,#6366f1);
+    border-color:transparent;
+    font-weight:700;
+    box-shadow:0 8px 22px -8px rgba(56,189,248,.9);
+  }
+  button.primary:hover{filter:brightness(1.1);}
+  .grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .cell{
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(120,160,220,.1);
+    border-radius:9px;
+    padding:7px 9px;
+  }
+  .cell span{
+    display:block;font-size:11px;color:var(--dim);margin-bottom:3px;
+  }
+  .cell b{
+    font-size:13.5px;font-variant-numeric:tabular-nums;
+    color:var(--txt);font-weight:600;
+  }
+  .cell b.c1{color:var(--cyan);}
+  .cell b.c2{color:var(--pink);}
+  .cell b.c3{color:var(--gold);}
+  .formula p{
+    margin:0 0 6px;
+    font-size:13px;
+    color:#a9bde0;
+    font-family:"Cambria Math",Georgia,serif;
+    letter-spacing:.04em;
+  }
+  .formula p:last-child{margin-bottom:0;}
+  @media (max-width:900px){
+    .main{flex-direction:column;}
+    .stage{height:400px;flex:none;}
+    .panel{flex:none;max-height:none;overflow:visible;}
+    .grid{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <h1>平抛运动演示</h1>
+    <p>水平抛出 · 只受重力 · 匀变速曲线运动</p>
+  </header>
+
+  <div class="main">
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="legend">
+        <span><i style="background:#38bdf8"></i>vₓ 水平速度</span>
+        <span><i style="background:#f472b6"></i>v_y 竖直速度</span>
+        <span><i style="background:#fbbf24"></i>v 合速度</span>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div class="card">
+        <h3>参数调节</h3>
+        <div class="ctrl">
+          <label>初速度 v₀ <b id="v0-val">8.0 m/s</b></label>
+          <input type="range" id="v0" min="2" max="20" step="0.5" value="8" />
+        </div>
+        <div class="ctrl">
+          <label>抛出高度 h <b id="h-val">20 m</b></label>
+          <input type="range" id="h" min="5" max="60" step="1" value="20" />
+        </div>
+        <div class="btns">
+          <button id="play" class="primary">▶ 播放</button>
+          <button id="reset">↺ 重置</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>实时数据</h3>
+        <div class="grid">
+          <div class="cell"><span>时间 t</span><b id="d-t">0.00 s</b></div>
+          <div class="cell"><span>水平位移 x</span><b id="d-x" class="c1">0.00 m</b></div>
+          <div class="cell"><span>竖直位移 y</span><b id="d-y" class="c2">0.00 m</b></div>
+          <div class="cell"><span>水平速度 vₓ</span><b id="d-vx" class="c1">0.00 m/s</b></div>
+          <div class="cell"><span>竖直速度 v_y</span><b id="d-vy" class="c2">0.00 m/s</b></div>
+          <div class="cell"><span>合速度 v</span><b id="d-v" class="c3">0.00 m/s</b></div>
+          <div class="cell"><span>速度偏角 θ</span><b id="d-ang">0.0°</b></div>
+          <div class="cell"><span>落地时间 T</span><b id="d-T">0.00 s</b></div>
+        </div>
+      </div>
+
+      <div class="card formula">
+        <h3>运动规律</h3>
+        <p>x = v₀ t</p>
+        <p>y = ½ g t²</p>
+        <p>v_y = g t</p>
+        <p>v = √(v₀² + v_y²)</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
+
+  const P = { v0: 8, h: 20, g: 9.8 };          // 物理参数
+  const S = { t: 0, playing: false };          // 动画状态
+
+  let W = 0, H = 0, DPR = 1;
+  let ox = 0, oy = 0, scale = 1, T = 0;
+
+  /* ============ 布局与缩放 ============ */
+  function computeLayout(){
+    T = Math.sqrt(2 * P.h / P.g);
+    const xmax = P.v0 * T;
+
+    const padL = 74, padR = 74, padT = 64, padB = 76;
+    const availW = Math.max(80, W - padL - padR);
+    const availH = Math.max(80, H - padT - padB);
+
+    scale = Math.min(availW / Math.max(xmax, 0.5), availH / P.h);
+
+    ox = padL + (availW - xmax * scale) / 2;
+    oy = padT + (availH - P.h * scale) / 2;
+  }
+
+  function fitCanvas(){
+    const rect = stage.getBoundingClientRect();
+    W = rect.width;
+    H = rect.height;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width  = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    computeLayout();
+  }
+
+  const W2S = (x, y) => ({ x: ox + x * scale, y: oy + y * scale });
+
+  /* ============ 绘图工具 ============ */
+  function niceStep(){
+    const cands = [0.5, 1, 2, 5, 10, 20, 50, 100, 200];
+    for (const c of cands) if (c * scale >= 58) return c;
+    return 500;
+  }
+
+  function drawGrid(){
+    const step = niceStep();
+    const sp = step * scale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,170,230,0.09)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let sx = ox % sp; sx <= W; sx += sp){
+      ctx.moveTo(Math.round(sx) + .5, 0);
+      ctx.lineTo(Math.round(sx) + .5, H);
+    }
+    for (let sy = oy % sp; sy <= H; sy += sp){
+      ctx.moveTo(0, Math.round(sy) + .5);
+      ctx.lineTo(W, Math.round(sy) + .5);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawAxes(){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150,185,235,0.4)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(ox - 26, oy); ctx.lineTo(W - 18, oy);   // x 轴
+    ctx.moveTo(ox, oy - 26); ctx.lineTo(ox, H - 18);   // y 轴
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(160,195,240,0.7)';
+    ctx.font = '13px ui-sans-serif, system-ui, sans-serif';
+    ctx.fillText('x', W - 26, oy - 12);
+    ctx.fillText('y', ox + 10, H - 24);
+    ctx.restore();
+  }
+
+  function drawGround(){
+    const gy = oy + P.h * scale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(52,211,153,0.75)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ox - 34, gy);
+    ctx.lineTo(W - 12, gy);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(52,211,153,0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = ox - 34; x < W - 12; x += 12){
+      ctx.moveTo(x, gy);
+      ctx.lineTo(x + 10, gy + 10);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawTrajectory(){
+    const t = S.t;
+    if (t <= 0) return;
+    const N = 140;
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++){
+      const tt = t * i / N;
+      const p = W2S(P.v0 * tt, 0.5 * P.g * tt * tt);
+      i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+    }
+    ctx.strokeStyle = 'rgba(56,189,248,0.95)';
+    ctx.lineWidth = 2.4;
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(56,189,248,0.85)';
+    ctx.shadowBlur = 14;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawProjections(x, y){
+    const p  = W2S(x, y);
+    const px = W2S(x, 0);
+    const py = W2S(0, y);
+    ctx.save();
+    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 1.2;
+
+    ctx.strokeStyle = 'rgba(56,189,248,0.5)';
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(px.x, px.y); ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(244,114,182,0.5)';
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(py.x, py.y); ctx.stroke();
+
+    // 抛出点
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(200,225,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(ox, oy, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function arrow(x1, y1, x2, y2, color, width){
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const hl = 11;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - hl * Math.cos(ang - 0.42), y2 - hl * Math.sin(ang - 0.42));
+    ctx.lineTo(x2 - hl * Math.cos(ang + 0.42), y2 - hl * Math.sin(ang + 0.42));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawVectors(x, y, vx, vy){
+    const p = W2S(x, y);
+    const vmax = Math.sqrt(P.v0 * P.v0 + 2 * P.g * P.h) || 1;
+    const vs = 88 / vmax;
+
+    const ax = vx * vs;
+    const ay = vy * vs;
+
+    if (Math.abs(ax) > 2) arrow(p.x, p.y, p.x + ax, p.y, '#38bdf8', 2.2);
+    if (Math.abs(ay) > 2) arrow(p.x, p.y, p.x, p.y + ay, '#f472b6', 2.2);
+    if (Math.hypot(ax, ay) > 2) arrow(p.x, p.y, p.x + ax, p.y + ay, '#fbbf24', 2.6);
+
+    ctx.save();
+    ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
+    if (Math.abs(ax) > 16){
+      ctx.fillStyle = '#7dd3fc';
+      ctx.fillText('vₓ', p.x + ax + 6, p.y - 7);
+    }
+    if (Math.abs(ay) > 16){
+      ctx.fillStyle = '#f9a8d4';
+      ctx.fillText('v_y', p.x - 30, p.y + ay + 4);
+    }
+    if (Math.hypot(ax, ay) > 28){
+      ctx.fillStyle = '#fcd34d';
+      ctx.fillText('v', p.x + ax * 0.55 + 8, p.y + ay * 0.55 - 6);
+    }
+    ctx.restore();
+  }
+
+  function drawBall(x, y){
+    const p = W2S(x, y);
+    const r = 9;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(251,191,36,0.9)';
+    ctx.shadowBlur = 18;
+    const g = ctx.createRadialGradient(p.x - 3, p.y - 3.5, 1, p.x, p.y, r);
+    g.addColorStop(0, '#fffbeb');
+    g.addColorStop(0.45, '#fbbf24');
+    g.addColorStop(1, '#f59e0b');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* ============ 主绘制 ============ */
+  function draw(){
+    const t  = S.t;
+    const x  = P.v0 * t;
+    const y  = 0.5 * P.g * t * t;
+    const vx = P.v0;
+    const vy = P.g * t;
+
+    ctx.clearRect(0, 0, W, H);
+    drawGrid();
+    drawGround();
+    drawAxes();
+    drawTrajectory();
+    drawProjections(x, y);
+    drawVectors(x, y, vx, vy);
+    drawBall(x, y);
+  }
+
+  /* ============ 数据面板 ============ */
+  const el = id => document.getElementById(id);
+  const nodes = {
+    t: el('d-t'), x: el('d-x'), y: el('d-y'),
+    vx: el('d-vx'), vy: el('d-vy'), v: el('d-v'),
+    ang: el('d-ang'), T: el('d-T')
+  };
+
+  function updateReadout(){
+    const t = S.t;
+    const x = P.v0 * t;
+    const y = 0.5 * P.g * t * t;
+    const vx = P.v0;
+    const vy = P.g * t;
+    const v = Math.hypot(vx, vy);
+    const ang = Math.atan2(vy, vx) * 180 / Math.PI;
+
+    nodes.t.textContent  = t.toFixed(2) + ' s';
+    nodes.x.textContent  = x.toFixed(2) + ' m';
+    nodes.y.textContent  = y.toFixed(2) + ' m';
+    nodes.vx.textContent = vx.toFixed(2) + ' m/s';
+    nodes.vy.textContent = vy.toFixed(2) + ' m/s';
+    nodes.v.textContent  = v.toFixed(2) + ' m/s';
+    nodes.ang.textContent = ang.toFixed(1) + '°';
+    nodes.T.textContent  = T.toFixed(2) + ' s';
+  }
+
+  /* ============ 循环 ============ */
+  let prev = 0;
+  function tick(now){
+    if (!prev) prev = now;
+    let dt = (now - prev) / 1000;
+    prev = now;
+    if (dt > 0.05) dt = 0.05;
+
+    if (S.playing){
+      S.t += dt;
+      if (S.t >= T){
+        S.t = T;
+        S.playing = false;
+        syncPlayBtn();
+      }
+    }
+
+    draw();
+    updateReadout();
+    requestAnimationFrame(tick);
+  }
+
+  /* ============ 交互 ============ */
+  const btnPlay  = el('play');
+  const btnReset = el('reset');
+  const rV0 = el('v0');
+  const rH  = el('h');
+
+  function syncPlayBtn(){
+    btnPlay.textContent = S.playing ? '⏸ 暂停' : (S.t >= T - 1e-6 ? '↻ 再来一次' : '▶ 播放');
+  }
+
+  btnPlay.addEventListener('click', () => {
+    if (S.t >= T - 1e-6) S.t = 0;
+    S.playing = !S.playing;
+    syncPlayBtn();
+  });
+
+  btnReset.addEventListener('click', () => {
+    S.t = 0;
+    S.playing = false;
+    syncPlayBtn();
+    draw();
+    updateReadout();
+  });
+
+  function onParamChange(){
+    P.v0 = parseFloat(rV0.value);
+    P.h  = parseFloat(rH.value);
+    el('v0-val').textContent = P.v0.toFixed(1) + ' m/s';
+    el('h-val').textContent  = P.h.toFixed(0) + ' m';
+
+    S.t = 0;
+    S.playing = false;
+    syncPlayBtn();
+    computeLayout();
+    draw();
+    updateReadout();
+  }
+
+  rV0.addEventListener('input', onParamChange);
+  rH.addEventListener('input', onParamChange);
+
+  let rzTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(() => {
+      fitCanvas();
+      draw();
+    }, 90);
+  });
+
+  /* ============ 启动 ============ */
+  fitCanvas();
+  syncPlayBtn();
+  updateReadout();
+  requestAnimationFrame(tick);
+
+})();
+</script>
+</body>
+</html>
