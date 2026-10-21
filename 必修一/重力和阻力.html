@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>竖直牛顿第二定律｜双物体仿真</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
+body{margin:16px;display:flex;gap:16px;background:#f6f8fa}
+
+.left-panel{
+  width:300px;
+  padding:16px;
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 2px 8px #0002;
+}
+
+.right-wrap{
+  flex:1;
+  display:grid;
+  grid-template-columns: 1fr 260px;
+  grid-template-rows: auto auto;
+  gap:12px;
+}
+
+.canvas-wrap{
+  grid-row: 1 / 3;
+  grid-column: 1 / 2;
+  background:#fff;
+  border-radius:10px;
+  padding:12px;
+  box-shadow:0 2px 8px #0002;
+  position:relative;
+}
+
+#cvsMain{
+  border:1px solid #ccc;
+  background:#fdfdfd;
+  display:block;
+}
+
+#cvsVT{
+  grid-row: 1 / 2;
+  grid-column: 2 / 3;
+  border:1px solid #ccc;
+  background:#fff;
+  align-self:start;
+}
+
+.panel-b{
+  grid-row: 2 / 3;
+  grid-column: 2 / 3;
+  background:#fff;
+  border-radius:10px;
+  padding:16px;
+  box-shadow:0 2px 8px #0002;
+  align-self:start;
+}
+
+.slide-row{margin:10px 0}
+label{display:block;margin-bottom:4px;font-size:14px}
+input[type=range]{width:100%}
+.val{color:#066;font-weight:bold}
+button{padding:8px 14px;margin:4px;border:none;border-radius:6px;cursor:pointer}
+#start{background:#28a745;color:white}
+#reset{background:#007bff;color:white}
+.p1{border-left:4px solid #f44}
+.p2{border-left:4px solid #44f}
+.info{font-size:13px;margin:6px 0;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="left-panel">
+  <h3>全局控制 & 物体A</h3>
+
+  <div class="slide-row">
+    <label>播放速度倍率 <span class="val" id="speedRateVal">1.0x</span></label>
+    <input type="range" id="speedRate" min="0.1" max="1" step="0.1" value="1">
+  </div>
+
+  <div>
+    <button id="start">开始 / 暂停</button>
+    <button id="reset">重置</button>
+  </div>
+
+  <div class="panel p1" style="margin-top:16px;width:100%">
+    <h4>🔴 物体A</h4>
+
+    <div class="slide-row">
+      <label>重力 G₁（N） <span class="val" id="G1Val">10.0 N</span></label>
+      <input type="range" id="G1" min="5" max="30" step="0.1" value="10">
+    </div>
+
+    <div class="slide-row">
+      <label>阻力 F阻₁（N） <span class="val" id="f1Val">0.0 N</span></label>
+      <input type="range" id="f1" min="0" max="25" step="0.1" value="0">
+    </div>
+
+    <div class="info">
+      合力 F合₁=<span id="F1">0.00</span> N<br>
+      a₁=<span id="a1">0.00</span> m/s²<br>
+      v₁=<span id="v1">0.00</span> m/s<br>
+      y₁=<span id="y1">0.00</span> m
+    </div>
+  </div>
+</div>
+
+<div class="right-wrap">
+  <div class="canvas-wrap">
+    <canvas id="cvsMain" width="400" height="700"></canvas>
+  </div>
+
+  <canvas id="cvsVT" width="240" height="190"></canvas>
+
+  <div class="panel-b p2">
+    <h4>🔵 物体B</h4>
+
+    <div class="slide-row">
+      <label>重力 G₂（N） <span class="val" id="G2Val">10.0 N</span></label>
+      <input type="range" id="G2" min="5" max="30" step="0.1" value="10">
+    </div>
+
+    <div class="slide-row">
+      <label>阻力 F阻₂（N） <span class="val" id="f2Val">0.0 N</span></label>
+      <input type="range" id="f2" min="0" max="25" step="0.1" value="0">
+    </div>
+
+    <div class="info">
+      合力 F合₂=<span id="F2">0.00</span> N<br>
+      a₂=<span id="a2">0.00</span> m/s²<br>
+      v₂=<span id="v2">0.00</span> m/s<br>
+      y₂=<span id="y2">0.00</span> m
+    </div>
+  </div>
+</div>
+
+<script>
+const cvs = document.getElementById('cvsMain');
+const ctx = cvs.getContext('2d');
+const cvsVT = document.getElementById('cvsVT');
+const ctxVT = cvsVT.getContext('2d');
+
+// A在左边，B在右边偏下
+let obj1 = {x:110, y:50, v:0, a:0, G:10, f:0, m:1, color:'#f44', vtList:[]};
+let obj2 = {x:300, y:50, v:0, a:0, G:10, f:0, m:1, color:'#44f', vtList:[]};
+
+let running = false;
+let speedRate = 1.0;
+let timeNow = 0;
+const dtBase = 0.02;
+const maxVtTime = 8;
+const maxVtV = 20;
+const mainCanvasH = 700;
+
+const speedRateSlider = document.getElementById('speedRate');
+const G1Slider = document.getElementById('G1');
+const f1Slider = document.getElementById('f1');
+const G2Slider = document.getElementById('G2');
+const f2Slider = document.getElementById('f2');
+
+function updateUI(){
+  speedRate = Number(speedRateSlider.value);
+  obj1.G = Number(G1Slider.value);
+  obj1.f = Number(f1Slider.value);
+  obj2.G = Number(G2Slider.value);
+  obj2.f = Number(f2Slider.value);
+
+  // 质量由重力和g=10自动决定，界面不显示质量
+  obj1.m = obj1.G / 10;
+  obj2.m = obj2.G / 10;
+
+  const F1 = obj1.G - obj1.f;
+  const F2 = obj2.G - obj2.f;
+  obj1.a = F1 / obj1.m;
+  obj2.a = F2 / obj2.m;
+
+  document.getElementById('speedRateVal').innerText = speedRate.toFixed(1) + 'x';
+  document.getElementById('G1Val').innerText = obj1.G.toFixed(1) + ' N';
+  document.getElementById('f1Val').innerText = obj1.f.toFixed(1) + ' N';
+  document.getElementById('G2Val').innerText = obj2.G.toFixed(1) + ' N';
+  document.getElementById('f2Val').innerText = obj2.f.toFixed(1) + ' N';
+
+  document.getElementById('F1').innerText = F1.toFixed(2);
+  document.getElementById('F2').innerText = F2.toFixed(2);
+  document.getElementById('a1').innerText = obj1.a.toFixed(2);
+  document.getElementById('a2').innerText = obj2.a.toFixed(2);
+  document.getElementById('v1').innerText = obj1.v.toFixed(2);
+  document.getElementById('v2').innerText = obj2.v.toFixed(2);
+  document.getElementById('y1').innerText = ((obj1.y - 50) / 50).toFixed(2);
+  document.getElementById('y2').innerText = ((obj2.y - 50) / 50).toFixed(2);
+}
+
+speedRateSlider.oninput = updateUI;
+G1Slider.oninput = updateUI;
+f1Slider.oninput = updateUI;
+G2Slider.oninput = updateUI;
+f2Slider.oninput = updateUI;
+
+function calc(o, dt){
+  o.v += o.a * dt;
+  o.y += o.v * dt * 50;
+}
+
+function drawMain(){
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+  ctx.strokeStyle = '#aaa';
+  ctx.fillStyle = '#333';
+
+  for(let i = 0; i <= 13; i++){
+    let py = 50 + i * 50;
+    ctx.beginPath();
+    ctx.moveTo(80, py);
+    ctx.lineTo(100, py);
+    ctx.stroke();
+    ctx.fillText(i + ' m', 50, py + 4);
+  }
+
+  // 小球跑到画布底部就不再绘制（消失）
+  if(obj1.y < mainCanvasH - 16){
+    ctx.beginPath();
+    ctx.arc(obj1.x, obj1.y, 16, 0, Math.PI * 2);
+    ctx.fillStyle = obj1.color;
+    ctx.fill();
+    ctx.stroke();
+  }
+  if(obj2.y < mainCanvasH - 16){
+    ctx.beginPath();
+    ctx.arc(obj2.x, obj2.y, 16, 0, Math.PI * 2);
+    ctx.fillStyle = obj2.color;
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawVT(){
+  ctxVT.clearRect(0, 0, cvsVT.width, cvsVT.height);
+
+  const w = cvsVT.width;
+  const h = cvsVT.height;
+
+  // 坐标轴下移，给下方文字留空间
+  ctxVT.strokeStyle = '#888';
+  ctxVT.beginPath();
+  ctxVT.moveTo(30, h - 50);
+  ctxVT.lineTo(w - 10, h - 50);
+  ctxVT.moveTo(30, h - 50);
+  ctxVT.lineTo(30, 10);
+  ctxVT.stroke();
+
+  ctxVT.fillStyle = '#333';
+  ctxVT.font = '10px sans-serif';
+  ctxVT.fillText('t(s)', w - 15, h - 55);
+  ctxVT.fillText('v(m/s)', 5, 15);
+  ctxVT.fillText('V-t图像', 70, 16);
+
+  // A的v-t曲线
+  ctxVT.strokeStyle = obj1.color;
+  ctxVT.beginPath();
+  for(let i = 0; i < obj1.vtList.length; i++){
+    const [t, v] = obj1.vtList[i];
+    const px = 30 + t / maxVtTime * (w - 40);
+    const py = (h - 50) - v / maxVtV * (h - 60);
+    if(i === 0) ctxVT.moveTo(px, py);
+    else ctxVT.lineTo(px, py);
+  }
+  ctxVT.stroke();
+
+  // B的v-t曲线
+  ctxVT.strokeStyle = obj2.color;
+  ctxVT.beginPath();
+  for(let i = 0; i < obj2.vtList.length; i++){
+    const [t, v] = obj2.vtList[i];
+    const px = 30 + t / maxVtTime * (w - 40);
+    const py = (h - 50) - v / maxVtV * (h - 60);
+    if(i === 0) ctxVT.moveTo(px, py);
+    else ctxVT.lineTo(px, py);
+  }
+  ctxVT.stroke();
+
+  // 文字放大，放在时间轴下方，不与坐标轴重合；A在上，B在下
+  ctxVT.font = 'bold 12px sans-serif';
+  ctxVT.fillStyle = '#f44';
+  ctxVT.fillText('A: t=' + timeNow.toFixed(2) + 's , v=' + obj1.v.toFixed(2) + 'm/s', 22, h - 32);
+  ctxVT.fillStyle = '#44f';
+  ctxVT.fillText('B: t=' + timeNow.toFixed(2) + 's , v=' + obj2.v.toFixed(2) + 'm/s', 22, h - 14);
+}
+
+function loop(){
+  if(running){
+    const dt = dtBase * speedRate;
+    timeNow += dt;
+
+    calc(obj1, dt);
+    calc(obj2, dt);
+
+    obj1.vtList.push([timeNow, obj1.v]);
+    obj2.vtList.push([timeNow, obj2.v]);
+
+    if(obj1.vtList.length > 500) obj1.vtList.shift();
+    if(obj2.vtList.length > 500) obj2.vtList.shift();
+
+    updateUI();
+  }
+
+  drawMain();
+  drawVT();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('start').onclick = function(){
+  running = !running;
+};
+
+document.getElementById('reset').onclick = function(){
+  obj1.y = 50;
+  obj1.v = 0;
+  obj1.a = 0;
+  obj1.vtList = [];
+
+  obj2.y = 50;
+  obj2.v = 0;
+  obj2.a = 0;
+  obj2.vtList = [];
+
+  timeNow = 0;
+  running = false;
+  updateUI();
+};
+
+updateUI();
+loop();
+</script>
+
+</body>
+</html>
