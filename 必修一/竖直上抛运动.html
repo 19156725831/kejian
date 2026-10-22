@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>竖直上抛运动仿真课件【向上为正 · a为加速度】</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{display:flex;height:100vh;background:#f4f7fa;overflow:hidden}
+#canvasWrap{flex:1;padding:16px;display:flex;align-items:center;justify-content:center}
+canvas{background:#fff;border:2px solid #ccc;border-radius:8px;box-shadow:0 2px 10px #00000015}
+#panel{width:360px;background:#fff;border-left:1px solid #ddd;padding:20px;overflow-y:auto}
+h2{text-align:center;margin-bottom:20px;color:#222;font-size:18px}
+.item{margin-bottom:14px}
+label{display:block;margin-bottom:4px;color:#444;font-size:14px}
+input[type="number"]{width:100%;padding:8px;border:1px solid #bbb;border-radius:6px;font-size:15px}
+input[type="range"]{width:100%}
+.btn-group{display:flex;gap:8px;margin:16px 0}
+button{flex:1;padding:9px;border:none;border-radius:6px;font-size:14px;cursor:pointer}
+#playBtn{background:#2563eb;color:#fff}
+#resetBtn{background:#6b7280;color:#fff}
+.dataBox{margin-top:20px;padding:14px;background:#f0f7ff;border-radius:8px;border:1px solid #c7e0fc}
+.dataBox h3{font-size:15px;margin-bottom:10px;color:#1e40af}
+.data-item{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;border-bottom:1px dashed #d8e8fc}
+.data-item:last-child{border-bottom:none}
+.note{margin-top:16px;font-size:12px;color:#666;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="canvasWrap">
+<canvas id="cvs" width="460" height="620"></canvas>
+</div>
+<div id="panel">
+<h2>竖直上抛运动（向上为正方向）</h2>
+<div class="item">
+<label>初速度 v₀ (m/s) 【↑正，↓负】</label>
+<input id="v0Input" type="number" value="20" min="-100" max="100" step="0.1">
+</div>
+<div class="item">
+<label>加速度 a (m/s²) 【星球重力，默认 -9.8】</label>
+<input id="aInput" type="number" value="-9.8" min="-30" max="10" step="0.1">
+</div>
+<div class="item">
+<label>播放速度：<span id="speedText">0.5</span></label>
+<input id="speedRange" type="range" min="0.1" max="1" step="0.05" value="0.5">
+</div>
+<div class="btn-group">
+<button id="playBtn">暂停</button>
+<button id="resetBtn">重置</button>
+</div>
+<div class="dataBox">
+<h3>实时数据</h3>
+<div class="data-item"><span>时间 t</span><span id="showT">0.00 s</span></div>
+<div class="data-item"><span>高度 h</span><span id="showH">0.00 m</span></div>
+<div class="data-item"><span>速度 v</span><span id="showV">0.00 m/s</span></div>
+<div class="data-item"><span>最高点 Hmax</span><span id="showHmax">--</span></div>
+<div class="data-item"><span>状态</span><span id="showState">等待开始</span></div>
+</div>
+<div class="note">
+✅ 坐标系约定：向上为正方向<br>
+公式：<br>
+v = v₀ + a t<br>
+h = v₀ t + ½ a t²<br>
+a 为加速度；星球表面下方蓝色填充。
+</div>
+</div>
+
+<script>
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+const v0Input = document.getElementById('v0Input');
+const aInput = document.getElementById('aInput');
+const speedRange = document.getElementById('speedRange');
+const speedText = document.getElementById('speedText');
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+const showT = document.getElementById('showT');
+const showH = document.getElementById('showH');
+const showV = document.getElementById('showV');
+const showHmax = document.getElementById('showHmax');
+const showState = document.getElementById('showState');
+
+let isPlaying = true;
+let speed = Number(speedRange.value);
+let t = 0;
+let v0 = Number(v0Input.value);
+let a = Number(aInput.value);
+let hMax = null;
+let tPeak = null;
+const scale = 8;
+const cx = cvs.width / 2;
+const cy = cvs.height - 40;
+const planetRadius = 2200; // 星球半径，越小弯曲越明显
+
+speedRange.oninput = ()=>{
+    speed = Number(speedRange.value);
+    speedText.innerText = speed.toFixed(2);
+};
+
+playBtn.onclick = ()=>{
+    isPlaying = !isPlaying;
+    playBtn.innerText = isPlaying ? '暂停' : '播放';
+};
+
+function reset(){
+    v0 = Number(v0Input.value);
+    a = Number(aInput.value);
+    t = 0;
+    hMax = null;
+    tPeak = null;
+    // 只有加速度向下(a<0)、初速度向上(v0>0)才有最高点
+    if(a < 0 && v0 > 0){
+        tPeak = -v0 / a;
+        hMax = v0 * tPeak + 0.5 * a * tPeak * tPeak;
+        showHmax.innerText = hMax.toFixed(2)+' m';
+    }else{
+        showHmax.innerText = '--';
+    }
+}
+resetBtn.onclick = reset;
+v0Input.onchange = reset;
+aInput.onchange = reset;
+
+// 绘制弧形星球表面 + 下方蓝色填充
+function drawPlanetSurface(){
+    const arcCenterX = cx;
+    const arcCenterY = cy + planetRadius;
+    const startA = -Math.PI/2 - 0.22;
+    const endA = -Math.PI/2 + 0.22;
+
+    // 星球内部蓝色填充
+    ctx.fillStyle="#83b8e8";
+    ctx.beginPath();
+    ctx.moveTo(arcCenterX, arcCenterY);
+    ctx.arc(arcCenterX, arcCenterY, planetRadius, startA, endA);
+    ctx.closePath();
+    ctx.fill();
+
+    // 星球表面边线
+    ctx.strokeStyle="#222";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(arcCenterX, arcCenterY, planetRadius, startA, endA);
+    ctx.stroke();
+
+    ctx.fillStyle="#222";
+    ctx.fillText("星球表面", cx+40, cy + 16);
+}
+
+function draw(){
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    drawPlanetSurface();
+
+    // 竖直坐标轴虚线（向上为正）
+    ctx.strokeStyle="#888";
+    ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx, cy - 340);
+    ctx.stroke();
+    ctx.fillText("h（向上+）", cx+4, cy - 340);
+    ctx.setLineDash([]);
+
+    // 最高点标记
+    if(hMax !== null && hMax >= 0){
+        const peakY = cy - hMax * scale;
+        ctx.fillStyle="#ef4444";
+        ctx.beginPath();
+        ctx.arc(cx, peakY,4,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillText(`Hmax=${hMax.toFixed(2)}m`, cx+8, peakY);
+    }
+
+    // 物理计算：向上为正，v = v0 + a t，h = v0 t + 0.5 a t²
+    const v = v0 + a * t;
+    const h = v0 * t + 0.5 * a * t * t;
+    let ballY = cy - h * scale;
+
+    // 小球
+    ctx.fillStyle="#2563eb";
+    ctx.beginPath();
+    ctx.arc(cx, ballY,8,0,Math.PI*2);
+    ctx.fill();
+
+    // 更新数据面板
+    showT.innerText = t.toFixed(2)+' s';
+    showH.innerText = h.toFixed(2)+' m';
+    showV.innerText = v.toFixed(2)+' m/s';
+
+    if(Math.abs(v) < 0.03){
+        showState.innerText="最高点，v=0";
+    }else if(v>0){
+        showState.innerText="上升阶段（v向上）";
+    }else{
+        showState.innerText="下落阶段（v向下）";
+    }
+
+    if(isPlaying){
+        t += 0.016 * speed;
+        // h<0 落到星球表面以下，停止
+        if(h < 0){
+            isPlaying = false;
+            playBtn.innerText = "播放";
+            showState.innerText="落到星球表面";
+        }
+    }
+    requestAnimationFrame(draw);
+}
+reset();
+draw();
+</script>
+</body>
+</html>

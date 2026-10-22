@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>匀变速两车追击课件</title>
+<style>
+*{box-sizing:border-box;font-family:system-ui, sans-serif;margin:0;padding:0}
+body{padding:12px;background:#eeeeee}
+h1{font-size:22px;margin-bottom:12px}
+.input-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.input-item{display:flex;flex-direction:column}
+.input-item label{font-size:13px;margin-bottom:3px}
+.input-item input{width:110px;padding:6px;font-size:15px}
+.control-row{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+#speedSlider{width:180px}
+button{padding:7px 14px;font-size:14px;cursor:pointer}
+#tipText{color:#444;font-size:14px}
+canvas{background:#ffffff;border:1px solid #aaa;border-radius:4px}
+</style>
+</head>
+<body>
+<h1>匀变速两车追击课件</h1>
+<div class="input-row">
+    <div class="input-item">
+        <label>红车初速度 v红 (m/s)</label>
+        <input id="vRed" type="number" value="10" min="-999" max="999" step="0.1">
+    </div>
+    <div class="input-item">
+        <label>红车加速度 a红 (m/s²)</label>
+        <input id="aRed" type="number" value="2" min="-999" max="999" step="0.1">
+    </div>
+    <div class="input-item">
+        <label>蓝车初速度 v蓝 (m/s)</label>
+        <input id="vBlue" type="number" value="5" min="-999" max="999" step="0.1">
+    </div>
+    <div class="input-item">
+        <label>蓝车加速度 a蓝 (m/s²)</label>
+        <input id="aBlue" type="number" value="1" min="-999" max="999" step="0.1">
+    </div>
+    <div class="input-item">
+        <label>初始距离 d (m)</label>
+        <input id="d0" type="number" value="20" min="-999" max="999" step="0.1">
+    </div>
+</div>
+<div class="control-row">
+    <div class="input-item">
+        <label>播放速度 <span id="speedVal">1.0</span></label>
+        <input id="speedSlider" type="range" min="0.1" max="1" step="0.05" value="1">
+    </div>
+    <button id="startBtn">▶ 开始</button>
+    <button id="pauseBtn">⏸ 暂停</button>
+    <button id="resetBtn">⟲ 重置</button>
+    <span id="tipText">填好参数，点“开始”</span>
+</div>
+<canvas id="cvs" width="1200" height="560"></canvas>
+
+<script>
+const cvs = document.getElementById("cvs");
+const ctx = cvs.getContext("2d");
+const vRedInp = document.getElementById("vRed");
+const aRedInp = document.getElementById("aRed");
+const vBlueInp = document.getElementById("vBlue");
+const aBlueInp = document.getElementById("aBlue");
+const d0Inp = document.getElementById("d0");
+const speedSlider = document.getElementById("speedSlider");
+const speedVal = document.getElementById("speedVal");
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const resetBtn = document.getElementById("resetBtn");
+const tipText = document.getElementById("tipText");
+
+let running = false;
+let speed = 1.0;
+let t = 0;
+let vR, aR, vB, aB, d0;
+const scale = 6;
+const laneH = 100;
+const laneTop = [20, 120, 220, 320, 420];
+const laneStartPx = 20;
+const laneEndPx = cvs.width - 40;
+
+// 每辆车独立记录当前所在行
+let redLaneIndex = 0;
+let blueLaneIndex = 0;
+
+speedSlider.oninput = () => {
+    speed = Number(speedSlider.value);
+    speedVal.textContent = speed.toFixed(2);
+};
+
+function readParams(){
+    vR = Number(vRedInp.value);
+    aR = Number(aRedInp.value);
+    vB = Number(vBlueInp.value);
+    aB = Number(aBlueInp.value);
+    d0 = Number(d0Inp.value);
+}
+
+function resetSim(){
+    running = false;
+    t = 0;
+    redLaneIndex = 0;
+    blueLaneIndex = 0;
+    tipText.textContent = "填好参数，点“开始”";
+    readParams();
+    draw();
+}
+resetBtn.onclick = resetSim;
+
+startBtn.onclick = () => {
+    readParams();
+    running = true;
+    tipText.textContent = "运动中...";
+    loop();
+};
+
+pauseBtn.onclick = () => {
+    running = false;
+    tipText.textContent = "已暂停";
+};
+
+function drawCar(xPx, y, color, text){
+    ctx.fillStyle = color;
+    ctx.fillRect(xPx - 22, y, 44, 32);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(text, xPx - 14, y + 20);
+}
+
+function draw(){
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
+
+    // 画5条跑道
+    for(let i = 0; i < 5; i++){
+        const y = laneTop[i];
+        ctx.strokeStyle = "#777";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(laneStartPx, y + laneH / 2);
+        ctx.lineTo(cvs.width - 20, y + laneH / 2);
+        ctx.stroke();
+        ctx.fillStyle = "#444";
+        ctx.fillText(`第${i + 1}行`, 24, y + laneH / 2 + 16);
+    }
+
+    // 总位移
+    const xrTotal = vR * t + 0.5 * aR * t * t;
+    const xbTotal = d0 + vB * t + 0.5 * aB * t * t;
+
+    // 单行长度（米）
+    const laneMaxM = (laneEndPx - laneStartPx) / scale;
+
+    // 每辆车根据自己已跑完的行数计算当前行和局部位移
+    const redOffsetM = redLaneIndex * laneMaxM;
+    const blueOffsetM = blueLaneIndex * laneMaxM;
+
+    const xrLocal = xrTotal - redOffsetM;
+    const xbLocal = xbTotal - blueOffsetM;
+
+    // 相遇提示
+    if(Math.abs(xrTotal - xbTotal) < 0.3){
+        tipText.textContent = `✅ t=${t.toFixed(2)}s 两车相遇！继续运动`;
+    }
+
+    // 红车当前位置
+    const redY = laneTop[redLaneIndex] + laneH / 2;
+    const redPx = laneStartPx + xrLocal * scale;
+
+    // 蓝车当前位置
+    const blueY = laneTop[blueLaneIndex] + laneH / 2;
+    const bluePx = laneStartPx + xbLocal * scale;
+
+    // 两车始终同时显示在当前跑道上
+    drawCar(redPx, redY - 18, "#dd2222", "红车");
+    drawCar(bluePx, blueY - 18, "#2244dd", "蓝车");
+
+    // 起点标注
+    if(redLaneIndex === 0){
+        ctx.fillStyle = "#333";
+        ctx.fillText("红车起点", laneStartPx, redY + 32);
+    }
+    if(blueLaneIndex === 0){
+        ctx.fillStyle = "#333";
+        ctx.fillText("蓝车起点", laneStartPx, blueY + 32);
+    }
+
+    // 谁从右边消失，谁立刻从下一行左边出现
+    if(xrLocal >= laneMaxM){
+        if(redLaneIndex < 4){
+            redLaneIndex++;
+        }
+    }
+    if(xbLocal >= laneMaxM){
+        if(blueLaneIndex < 4){
+            blueLaneIndex++;
+        }
+    }
+
+    // 两车都从第5行右端消失后，暂停结束
+    if(redLaneIndex >= 4 && blueLaneIndex >= 4 &&
+       xrLocal >= laneMaxM && xbLocal >= laneMaxM){
+        running = false;
+        tipText.textContent = "两车全部从第5行右端消失，模拟结束";
+    }
+}
+
+function loop(){
+    if(!running) return;
+    const dt = 0.016 * speed;
+    t += dt;
+    draw();
+    requestAnimationFrame(loop);
+}
+resetSim();
+</script>
+</body>
+</html>
