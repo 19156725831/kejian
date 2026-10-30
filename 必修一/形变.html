@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>NB风格物理仿真控制台</title>
+    <style>
+        :root {
+            --bg-color: #1e1e24;
+            --panel-bg: #2b2b36;
+            --panel-border: #3f3f4e;
+            --text-main: #e0e0e0;
+            --text-muted: #8b8b9a;
+            --accent-blue: #4dabf7;
+            --accent-orange: #ff922b;
+            --accent-red: #fa5252;
+            --accent-purple: #9b59b6;
+            --accent-green: #2ecc71;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 顶部标题区 */
+        header {
+            text-align: center;
+            padding: 12px 0;
+            background: #22222a;
+            border-bottom: 1px solid var(--panel-border);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(77, 171, 247, 0.5);
+        }
+
+        /* 主画布区 */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: radial-gradient(circle at center, #282833 0%, #1a1a20 100%);
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        canvas {
+            background: #1a1a20;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
+            cursor: grab;
+            max-width: 100%;
+            max-height: 100%;
+            aspect-ratio: 900 / 500; /* 加宽比例适配胡克定律 */
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        /* 底部控制区 */
+        .bottom-panel {
+            background-color: var(--panel-bg);
+            border-top: 1px solid var(--panel-border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+        }
+
+        /* 左侧操作区 */
+        .action-area {
+            flex: 1;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 15px;
+            min-height: 40px;
+        }
+
+        .action-hint {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.1s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .action-btn:active { transform: scale(0.95); }
+
+        .btn-orange { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .btn-purple { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+
+        /* 右侧导航区 */
+        .nav-tabs {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: #3a3a48;
+            border: 1px solid #4a4a5a;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover { background: #454556; color: #fff; }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #4dabf7, #2980b9);
+            border-color: #4dabf7;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(77, 171, 247, 0.3);
+        }
+
+        /* 隐藏辅助类 */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="exp-title">物理仿真实验室控制台</h1>
+    </header>
+
+    <div class="canvas-container" id="canvasWrapper">
+        <canvas id="mainCanvas" width="900" height="500"></canvas>
+    </div>
+
+    <div class="bottom-panel">
+        <!-- 左侧动态操作区 -->
+        <div class="action-area" id="actionArea">
+            <div id="defaultHint" class="action-hint">← 用鼠标在画布上直接拖拽操作 →</div>
+            
+            <button id="btnDesk" class="action-btn btn-orange hidden">按住向下压桌面</button>
+
+            <div id="exp4Controls" class="hidden" style="display: flex; gap: 10px;">
+                <button id="btnBottleLong" class="action-btn btn-purple">捏长轴</button>
+                <button id="btnBottleShort" class="action-btn btn-purple">捏短轴</button>
+            </div>
+
+            <div id="exp6Controls" class="hidden" style="display: flex; gap: 10px;">
+                <button id="btnAddWeight" class="action-btn btn-green">增加钩码 +</button>
+                <button id="btnRemoveWeight" class="action-btn btn-orange">减少钩码 -</button>
+            </div>
+        </div>
+
+        <!-- 右侧导航切换 -->
+        <div class="nav-tabs" id="navTabs">
+            <button class="nav-btn active" data-exp="1">球压墙壁</button>
+            <button class="nav-btn" data-exp="2">脚踩地面</button>
+            <button class="nav-btn" data-exp="3">桌面形变</button>
+            <button class="nav-btn" data-exp="4">玻璃瓶</button>
+            <button class="nav-btn" data-exp="5">弹性绳</button>
+            <button class="nav-btn" data-exp="6">胡克定律</button>
+        </div>
+    </div>
+
+<script>
+// ==========================================
+// 全局设置与工具函数
+// ==========================================
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const wrapper = document.getElementById('canvasWrapper');
+
+let currentExp = 1;
+let mousePos = { x: 0, y: 0 };
+let isMouseDown = false;
+
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+    };
+}
+
+function drawArrow(c, x1, y1, x2, y2, color, lineWidth = 3) {
+    const headlen = 12;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    c.save();
+    c.shadowColor = color;
+    c.shadowBlur = 8;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2);
+    c.strokeStyle = color; c.lineWidth = lineWidth; c.lineCap = 'round'; c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    c.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    c.closePath(); c.fillStyle = color; c.fill(); c.restore();
+}
+
+// ==========================================
+// 实验一：球与软墙壁
+// ==========================================
+const exp1 = {
+    wallLeft: 650, wallWidth: 60, ballRadius: 80, ballY: 250,
+    ballX: 250, targetX: 250,
+    init() { this.ballX = 250; this.targetX = 250; },
+    draw(c) {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+        let overlap = (this.ballX + this.ballRadius) - this.wallLeft;
+        if (overlap < 0) overlap = 0;
+        if (overlap > 55) overlap = 55;
+        
+        const rx = this.ballRadius - overlap * 0.4; 
+        const ry = this.ballRadius + overlap * 0.2; 
+        const contactX = this.ballX + rx;
+
+        c.save();
+        c.beginPath(); c.moveTo(this.wallLeft + this.wallWidth, 50); c.lineTo(this.wallLeft, 50);
+        if (overlap > 0.1) {
+            c.lineTo(this.wallLeft, this.ballY - ry);
+            c.bezierCurveTo(contactX, this.ballY - ry, contactX, this.ballY + ry, this.wallLeft, this.ballY + ry);
+            c.lineTo(this.wallLeft, 450);
+        } else {
+            c.lineTo(this.wallLeft, 450);
+        }
+        c.lineTo(this.wallLeft + this.wallWidth, 450); c.closePath();
+        const wallGrad = c.createLinearGradient(this.wallLeft, 0, this.wallLeft + this.wallWidth, 0);
+        wallGrad.addColorStop(0, '#4a4a55'); wallGrad.addColorStop(1, '#2b2b36');
+        c.fillStyle = wallGrad; c.fill(); c.strokeStyle = '#6a6a75'; c.lineWidth = 3; c.stroke();
+        c.restore();
+
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 20; c.shadowOffsetY = 15;
+        c.beginPath(); c.ellipse(this.ballX, this.ballY, rx, ry, 0, 0, Math.PI * 2);
+        const ballGrad = c.createRadialGradient(this.ballX - rx*0.3, this.ballY - ry*0.3, 10, this.ballX, this.ballY, Math.max(rx, ry));
+        ballGrad.addColorStop(0, '#74c0fc'); ballGrad.addColorStop(1, '#1864ab');
+        c.fillStyle = ballGrad; c.fill();
+        c.restore();
+        c.beginPath(); c.ellipse(this.ballX, this.ballY, rx, ry, 0, 0, Math.PI * 2);
+        c.strokeStyle = '#4dabf7'; c.lineWidth = 3; c.stroke();
+
+        if (overlap > 1) {
+            const forceMag = 30 + overlap * 2;
+            drawArrow(c, contactX, this.ballY - ry * 0.5, contactX - forceMag, this.ballY - ry * 0.5, '#ff6b6b', 4);
+            drawArrow(c, contactX, this.ballY + ry * 0.5, contactX + forceMag, this.ballY + ry * 0.5, '#ff6b6b', 4);
+            c.fillStyle = '#ff6b6b'; c.font = 'bold 16px Arial'; c.textAlign = 'right'; 
+            c.fillText("F_墙对球", contactX - forceMag - 10, this.ballY - ry * 0.5 - 10);
+            c.textAlign = 'left'; c.fillText("F_球对墙", contactX + forceMag + 10, this.ballY + ry * 0.5 + 25);
+        }
+    },
+    update() {
+        if (!isMouseDown && this.ballX !== 250) {
+            this.targetX += (250 - this.targetX) * 0.1;
+            if (Math.abs(this.targetX - 250) < 0.5) this.targetX = 250;
+        }
+        this.ballX += (this.targetX - this.ballX) * 0.2;
+    },
+    down(m) { if (Math.hypot(m.x - this.ballX, m.y - this.ballY) <= this.ballRadius + 20) { this.dragging = true; this.offX = m.x - this.ballX; } },
+    move(m) { if (this.dragging) { this.targetX = Math.max(this.ballRadius, Math.min(this.wallLeft - this.ballRadius + 55, m.x - this.offX)); } },
+    up() { this.dragging = false; }
+};
+
+// ==========================================
+// 实验二：脚踩地面
+// ==========================================
+const exp2 = {
+    groundY: 380, shoeWidth: 200, shoeHeight: 90, shoeX: 450,
+    shoeTopY: 290, targetY: 290, dep: 0, targetDep: 0,
+    init() { this.shoeTopY = this.groundY - this.shoeHeight; this.targetY = this.shoeTopY; this.dep = 0; this.targetDep = 0; },
+    draw(c) {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+        const dep = this.dep;
+
+        c.save();
+        c.beginPath(); c.moveTo(100, this.groundY);
+        if (dep > 0.5) {
+            c.lineTo(this.shoeX - this.shoeWidth, this.groundY);
+            c.bezierCurveTo(
+                this.shoeX - this.shoeWidth/2, this.groundY + dep * 1.5, 
+                this.shoeX - this.shoeWidth/4, this.groundY + dep * 1.5, 
+                this.shoeX, this.groundY + dep
+            );
+            c.bezierCurveTo(
+                this.shoeX + this.shoeWidth/4, this.groundY + dep * 1.5, 
+                this.shoeX + this.shoeWidth/2, this.groundY + dep * 1.5, 
+                this.shoeX + this.shoeWidth, this.groundY
+            );
+            c.lineTo(800, this.groundY);
+        } else { c.lineTo(800, this.groundY); }
+        c.lineTo(800, 480); c.lineTo(100, 480); c.closePath();
+        const groundGrad = c.createLinearGradient(0, this.groundY, 0, 480);
+        groundGrad.addColorStop(0, '#3f3f4e'); groundGrad.addColorStop(1, '#1e1e24');
+        c.fillStyle = groundGrad; c.fill(); c.strokeStyle = '#6a6a75'; c.lineWidth = 3; c.stroke();
+        c.restore();
+
+        const currentHeight = this.shoeHeight - dep * 0.6;
+        const bulge = dep * 0.8;
+        const currentWidth = this.shoeWidth + bulge * 2;
+        const curLeft = this.shoeX - currentWidth / 2;
+        const curRight = this.shoeX + currentWidth / 2;
+        const bottomY = this.groundY + dep; 
+        const topY = bottomY - currentHeight;
+
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 15; c.shadowOffsetY = 10;
+        c.beginPath(); 
+        c.moveTo(curLeft + 20, topY); c.lineTo(curLeft + 20, topY + currentHeight * 0.6); c.lineTo(curLeft, bottomY - 15);
+        if (dep > 0.5) {
+            c.quadraticCurveTo(this.shoeX, bottomY + dep * 0.4, curRight - 15, bottomY - 15);
+        } else {
+            c.quadraticCurveTo(this.shoeX, bottomY + 15, curRight - 15, bottomY - 15);
+        }
+        c.quadraticCurveTo(curRight, bottomY - 25, curRight, bottomY - 40);
+        c.lineTo(curRight - 20, topY + 15);
+        c.quadraticCurveTo(this.shoeX, topY - 5 + dep*0.2, curLeft + 20, topY);
+        
+        const shoeGrad = c.createLinearGradient(curLeft, topY, curRight, bottomY);
+        shoeGrad.addColorStop(0, '#f39c12'); shoeGrad.addColorStop(1, '#d35400');
+        c.fillStyle = shoeGrad; c.fill(); c.strokeStyle = '#e67e22'; c.lineWidth = 4; c.stroke();
+        c.restore();
+
+        if (dep > 2) {
+            const forceMag = 20 + dep * 1.5;
+            drawArrow(c, this.shoeX - 40, bottomY, this.shoeX - 40, bottomY - forceMag, '#ff6b6b', 4);
+            drawArrow(c, this.shoeX + 40, bottomY, this.shoeX + 40, bottomY + forceMag, '#ff6b6b', 4);
+            c.fillStyle = '#ff6b6b'; c.font = 'bold 16px Arial'; 
+            c.textAlign = 'right'; c.fillText("F_支持力", this.shoeX - 45, bottomY - forceMag + 15);
+            c.textAlign = 'left'; c.fillText("F_压力", this.shoeX + 45, bottomY + forceMag - 5);
+        }
+    },
+    update() {
+        this.shoeTopY += (this.targetY - this.shoeTopY) * 0.2;
+        this.targetDep = Math.max(0, (this.shoeTopY + this.shoeHeight) - this.groundY);
+        this.dep += (this.targetDep - this.dep) * 0.2;
+    },
+    down(m) { if (Math.abs(m.x - this.shoeX) < this.shoeWidth && Math.abs(m.y - this.shoeTopY) < this.shoeHeight) { this.dragging = true; this.offY = m.y - this.shoeTopY; } },
+    move(m) { if (this.dragging) { this.targetY = Math.max(150, Math.min(this.groundY - this.shoeHeight + 50, m.y - this.offY)); } },
+    up() { this.dragging = false; this.targetY = this.groundY - this.shoeHeight; }
+};
+
+// ==========================================
+// 实验三：桌面形变
+// ==========================================
+const exp3 = {
+    isPressed: false, offset: 0, targetOffset: 0, deskY: 350,
+    init() { this.isPressed = false; this.offset = 0; this.targetOffset = 0; },
+    draw(c) {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+        c.fillStyle = '#2b2b36'; c.fillRect(750, 50, 40, 400);
+        c.strokeStyle = '#6a6a75'; c.strokeRect(750, 50, 40, 400);
+        c.fillStyle = '#8b8b9a'; c.font = '14px Arial'; c.textAlign = 'right';
+        for (let i = -6; i <= 6; i++) {
+            let y = 250 + i * 30; c.beginPath(); c.moveTo(750, y); c.lineTo(765, y); c.stroke();
+            if (i % 1 === 0) c.fillText(i * 20, 745, y + 5);
+        }
+
+        c.save();
+        c.beginPath(); c.moveTo(150, this.deskY); c.quadraticCurveTo(450, this.deskY + this.offset * 2, 700, this.deskY);
+        const deskGrad = c.createLinearGradient(0, this.deskY, 0, this.deskY + 15);
+        deskGrad.addColorStop(0, '#8e44ad'); deskGrad.addColorStop(1, '#5e3370');
+        c.strokeStyle = deskGrad; c.lineWidth = 12; c.lineCap = 'round'; c.stroke();
+        c.restore();
+        c.fillStyle = '#3f3f4e'; c.fillRect(200, this.deskY, 15, 80); c.fillRect(635, this.deskY, 15, 80);
+
+        const slope = this.offset / 150; const angle = Math.atan(slope);
+        let m1X = 350, m1Y = this.deskY + this.offset * 0.5, m2X = 550, m2Y = this.deskY + this.offset * 1.5;
+
+        const drawM = (x, y, a) => {
+            c.save(); c.translate(x, y); c.rotate(a);
+            c.fillStyle = '#adb5bd'; c.strokeStyle = '#e9ecef'; c.lineWidth = 2;
+            c.fillRect(-5, -50, 10, 50); c.strokeRect(-5, -50, 10, 50); 
+            c.restore();
+        };
+        drawM(m1X, m1Y, angle); drawM(m2X, m2Y, -angle);
+
+        const p1x = m1X - 25 * Math.sin(angle), p1y = m1Y - 25 * Math.cos(angle);
+        const p2x = m2X + 25 * Math.sin(angle), p2y = m2Y - 25 * Math.cos(angle);
+        const wallY = 250 - this.offset * 12; 
+
+        c.save();
+        c.beginPath(); c.moveTo(100, 120); c.lineTo(p1x, p1y); c.lineTo(p2x, p2y); c.lineTo(750, wallY);
+        c.strokeStyle = '#ff6b6b'; c.lineWidth = 3; c.shadowColor = '#ff6b6b'; c.shadowBlur = 10; c.stroke();
+        c.beginPath(); c.arc(750, wallY, 8, 0, Math.PI * 2);
+        c.fillStyle = '#ff6b6b'; c.shadowBlur = 20; c.fill(); 
+        c.restore();
+
+        if (this.isPressed) {
+            drawArrow(c, 450, this.deskY - 80, 450, this.deskY - 15 - this.offset, '#f59f00', 4);
+            c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(60, 60, 240, 90); c.strokeStyle = '#555'; c.strokeRect(60, 60, 240, 90);
+            c.fillStyle = '#4dabf7'; c.font = '14px Courier New'; c.textAlign = 'left';
+            c.fillText(`镜面倾角 θ: ${(angle * 180 / Math.PI).toFixed(2)}°`, 75, 85);
+            c.fillText(`光斑移动 Δy: ${(this.offset * 12).toFixed(0)} px`, 75, 110);
+            c.fillStyle = '#ff922b'; c.fillText(`光杠杆放大效应`, 75, 135);
+        }
+    },
+    update() {
+        if (Math.abs(this.offset - this.targetOffset) > 0.1) this.offset += (this.targetOffset - this.offset) * 0.15;
+        else this.offset = this.targetOffset;
+    }
+};
+
+// ==========================================
+// 实验四：玻璃瓶形变
+// ==========================================
+const exp4 = {
+    cx: 450, cy: 320, baseA: 100, baseB: 60, currentA: 100, currentB: 60,
+    tubeW: 16, tubeH: 200, tubeBaseY: 290,
+    liquidHeight: 90, targetLiquidHeight: 90, mode: 'none',
+    init() { this.currentA = this.baseA; this.currentB = this.baseB; this.liquidHeight = 90; this.targetLiquidHeight = 90; this.mode = 'none'; },
+    draw(c) {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+        c.strokeStyle = '#3f3f4e'; c.lineWidth = 3;
+        for (let i = 0; i < this.tubeH; i += 20) { c.beginPath(); c.moveTo(this.cx + this.tubeW/2, this.tubeBaseY - i); c.lineTo(this.cx + this.tubeW/2 + 10, this.tubeBaseY - i); c.stroke(); }
+
+        c.save();
+        c.beginPath(); c.ellipse(this.cx, this.cy, this.currentA, this.currentB, 0, 0, Math.PI * 2);
+        const liqGrad = c.createRadialGradient(this.cx, this.cy, 20, this.cx, this.cy, this.currentA);
+        liqGrad.addColorStop(0, 'rgba(77, 171, 247, 0.2)'); liqGrad.addColorStop(1, 'rgba(77, 171, 247, 0.7)');
+        c.fillStyle = liqGrad; c.fill();
+        c.beginPath(); c.rect(this.cx - this.tubeW/2 + 2, this.tubeBaseY - this.liquidHeight, this.tubeW - 4, this.liquidHeight);
+        c.fillStyle = '#4dabf7'; c.shadowColor = '#4dabf7'; c.shadowBlur = 15; c.fill();
+        c.restore();
+
+        c.beginPath(); c.rect(this.cx - this.tubeW/2, this.tubeBaseY - this.tubeH, this.tubeW, this.tubeH);
+        c.strokeStyle = 'rgba(255,255,255,0.4)'; c.lineWidth = 2; c.stroke();
+        c.save();
+        c.beginPath(); c.ellipse(this.cx, this.cy, this.currentA, this.currentB, 0, 0, Math.PI * 2);
+        c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 3; c.stroke();
+        c.beginPath(); c.ellipse(this.cx - this.currentA*0.4, this.cy - this.currentB*0.4, this.currentA*0.2, this.currentB*0.2, Math.PI/4, 0, Math.PI*2);
+        c.fillStyle = 'rgba(255,255,255,0.1)'; c.fill();
+        c.restore();
+
+        if (this.mode === 'long') {
+            drawArrow(c, this.cx - this.currentA - 50, this.cy, this.cx - this.currentA - 10, this.cy, '#f59f00', 4);
+            drawArrow(c, this.cx + this.currentA + 50, this.cy, this.cx + this.currentA + 10, this.cy, '#f59f00', 4);
+            this.showData(c, "体积增大", "液面下降 ↓", '#ff6b6b');
+        } else if (this.mode === 'short') {
+            drawArrow(c, this.cx - 60, this.cy - this.currentB - 50, this.cx - 60, this.cy - this.currentB - 10, '#f59f00', 4);
+            drawArrow(c, this.cx + 60, this.cy - this.currentB - 50, this.cx + 60, this.cy - this.currentB - 10, '#f59f00', 4);
+            this.showData(c, "体积减小", "液面上升 ↑", '#4dabf7');
+        }
+    },
+    showData(c, title, subtitle, color) {
+        c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(300, 40, 300, 80);
+        c.strokeStyle = '#555'; c.lineWidth = 2; c.strokeRect(300, 40, 300, 80);
+        c.fillStyle = color; c.font = 'bold 20px Arial'; c.textAlign = 'center';
+        c.fillText(title, 450, 70);
+        c.fillStyle = '#e0e0e0'; c.font = '16px Arial';
+        c.fillText(subtitle, 450, 100);
+    },
+    update() {
+        let targetA = this.baseA, targetB = this.baseB;
+        if (this.mode === 'long') { targetA = this.baseA - 20; targetB = this.baseB + 8; this.targetLiquidHeight = 50; } 
+        else if (this.mode === 'short') { targetA = this.baseA + 8; targetB = this.baseB - 20; this.targetLiquidHeight = 130; } 
+        else { this.targetLiquidHeight = 90; }
+        this.currentA += (targetA - this.currentA) * 0.15; 
+        this.currentB += (targetB - this.currentB) * 0.15; 
+        this.liquidHeight += (this.targetLiquidHeight - this.liquidHeight) * 0.15;
+    }
+};
+
+// ==========================================
+// 实验五：弹性绳拉力
+// ==========================================
+const exp5 = {
+    pointA: { x: 350, y: 80 }, pointB: { x: 550, y: 80 }, weight: { x: 450, y: 350 },
+    weightRadius: 20, restLenHalf: 120, k: 1.0,
+    init() { this.weight = { x: 450, y: 350 }; },
+    draw(c) {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+        c.fillStyle = '#2b2b36'; c.fillRect(200, 0, 500, 30);
+        c.strokeStyle = '#6a6a75'; c.lineWidth = 2; c.beginPath(); c.moveTo(200, 30); c.lineTo(700, 30); c.stroke();
+        c.fillStyle = '#adb5bd'; c.beginPath(); c.arc(this.pointA.x, this.pointA.y, 6, 0, Math.PI * 2); c.fill(); c.beginPath(); c.arc(this.pointB.x, this.pointB.y, 6, 0, Math.PI * 2); c.fill();
+
+        const distA = Math.hypot(this.weight.x - this.pointA.x, this.weight.y - this.pointA.y);
+        const distB = Math.hypot(this.weight.x - this.pointB.x, this.weight.y - this.pointB.y);
+        const stretchA = Math.max(0, distA - this.restLenHalf), stretchB = Math.max(0, distB - this.restLenHalf);
+        const forceA = stretchA * this.k, forceB = stretchB * this.k;
+
+        c.save();
+        c.lineWidth = Math.max(2, 6 - stretchA * 0.05); c.strokeStyle = '#8b8b9a';
+        c.beginPath(); c.moveTo(this.pointA.x, this.pointA.y); c.lineTo(this.weight.x, this.weight.y); c.stroke();
+        c.lineWidth = Math.max(2, 6 - stretchB * 0.05);
+        c.beginPath(); c.moveTo(this.pointB.x, this.pointB.y); c.lineTo(this.weight.x, this.weight.y); c.stroke();
+        c.restore();
+
+        if (forceA > 1) {
+            const ux = (this.pointA.x - this.weight.x) / distA, uy = (this.pointA.y - this.weight.y) / distA;
+            drawArrow(c, this.weight.x + ux * this.weightRadius, this.weight.y + uy * this.weightRadius, this.weight.x + ux * (this.weightRadius + forceA), this.weight.y + uy * (this.weightRadius + forceA), '#ff6b6b', 4);
+        }
+        if (forceB > 1) {
+            const ux = (this.pointB.x - this.weight.x) / distB, uy = (this.pointB.y - this.weight.y) / distB;
+            drawArrow(c, this.weight.x + ux * this.weightRadius, this.weight.y + uy * this.weightRadius, this.weight.x + ux * (this.weightRadius + forceB), this.weight.y + uy * (this.weightRadius + forceB), '#ff6b6b', 4);
+        }
+
+        const gravityMag = 120;
+        drawArrow(c, this.weight.x, this.weight.y + this.weightRadius, this.weight.x, this.weight.y + this.weightRadius + gravityMag, '#4dabf7', 4);
+
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.8)'; c.shadowBlur = 20;
+        c.beginPath(); c.arc(this.weight.x, this.weight.y, this.weightRadius, 0, Math.PI * 2);
+        const ballGrad = c.createRadialGradient(this.weight.x - 8, this.weight.y - 8, 4, this.weight.x, this.weight.y, this.weightRadius);
+        ballGrad.addColorStop(0, '#74c0fc'); ballGrad.addColorStop(1, '#1864ab');
+        c.fillStyle = ballGrad; c.fill();
+        c.restore();
+    },
+    update() {},
+    down(m) { if (Math.hypot(m.x - this.weight.x, m.y - this.weight.y) <= this.weightRadius + 20) { this.dragging = true; this.offX = m.x - this.weight.x; this.offY = m.y - this.weight.y; } },
+    move(m) { if (this.dragging) { this.weight.x = Math.max(50, Math.min(850, m.x - this.offX)); this.weight.y = Math.max(60, Math.min(450, m.y - this.offY)); } },
+    up() { this.dragging = false; }
+};
+
+// ==========================================
+// 实验六：胡克定律与弹簧（重新排版）
+// ==========================================
+const exp6 = {
+    hookX: 250, hookY: 80, coilCount: 14, coilWidth: 35,
+    baseSpringLen: 100, hookLength: 30, weightHeight: 25, weightWidth: 45,
+    weightCount: 0, currentLen: 100, targetLen: 100,
+    // 图表位置右移，避免重叠
+    chartX: 650, chartY: 100, chartW: 200, chartH: 200,
+    init() { this.weightCount = 0; this.currentLen = 100; this.targetLen = 100; },
+    draw(c) {
+        c.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 刻度尺
+        c.fillStyle = '#2b2b36'; c.fillRect(100, this.hookY, 50, 400);
+        c.strokeStyle = '#6a6a75'; c.lineWidth = 2; c.strokeRect(100, this.hookY, 50, 400);
+        c.fillStyle = '#8b8b9a'; c.font = '14px Arial'; c.textAlign = 'right';
+        for (let i = 0; i <= 20; i++) {
+            const y = this.hookY + i * 20;
+            c.beginPath(); c.moveTo(130, y); c.lineTo(150, y); c.stroke();
+            c.fillText(`${i * 2}`, 125, y + 5);
+        }
+
+        // 支架
+        c.fillStyle = '#4a4a55'; c.fillRect(80, this.hookY - 20, 200, 20);
+        c.fillStyle = '#e9ecef'; c.beginPath(); c.arc(this.hookX, this.hookY, 6, 0, Math.PI * 2); c.fill();
+
+        // 计算弹簧长度
+        const springStretch = this.weightCount * 20;
+        this.targetLen = this.baseSpringLen + springStretch;
+        this.currentLen += (this.targetLen - this.currentLen) * 0.15;
+
+        // 绘制弹簧
+        c.beginPath(); c.moveTo(this.hookX, this.hookY);
+        const step = this.currentLen / this.coilCount;
+        for (let i = 0; i < this.coilCount; i++) {
+            const nextY = this.hookY + step * (i + 1);
+            const midY = this.hookY + step * (i + 0.5);
+            c.quadraticCurveTo(this.hookX + this.coilWidth, midY, this.hookX, nextY);
+            if (i % 2 === 0) { c.strokeStyle = '#adb5bd'; c.lineWidth = 4; }
+            else { c.strokeStyle = '#e9ecef'; c.lineWidth = 3; }
+            c.stroke(); c.beginPath(); c.moveTo(this.hookX, nextY);
+        }
+
+        // 挂钩与钩码
+        const hookBottomY = this.hookY + this.currentLen;
+        c.beginPath(); c.moveTo(this.hookX - 15, hookBottomY + this.hookLength); c.lineTo(this.hookX + 15, hookBottomY + this.hookLength);
+        c.strokeStyle = '#adb5bd'; c.lineWidth = 4; c.stroke();
+
+        for (let i = 0; i < this.weightCount; i++) {
+            const wy = hookBottomY + this.hookLength + i * this.weightHeight;
+            c.fillStyle = '#ced4da'; c.fillRect(this.hookX - this.weightWidth/2, wy, this.weightWidth, this.weightHeight);
+            c.fillStyle = '#adb5bd'; c.fillRect(this.hookX - this.weightWidth/2, wy + 6, this.weightWidth, 4);
+            c.fillStyle = '#868e96'; c.fillRect(this.hookX - this.weightWidth/2, wy + this.weightHeight - 4, this.weightWidth, 4);
+            c.strokeStyle = '#6a6a75'; c.lineWidth = 1; c.strokeRect(this.hookX - this.weightWidth/2, wy, this.weightWidth, this.weightHeight);
+        }
+
+        // 重力
+        if (this.weightCount > 0) {
+            const forceY = hookBottomY + this.hookLength + this.weightCount * this.weightHeight + 10;
+            drawArrow(c, this.hookX, hookBottomY + this.hookLength + this.weightCount * this.weightHeight, this.hookX, forceY + 40, '#ff6b6b', 4);
+            c.fillStyle = '#ff6b6b'; c.font = 'bold 16px Arial'; c.textAlign = 'center';
+            c.fillText(`F = ${this.weightCount} N`, this.hookX, forceY + 65);
+        }
+
+        // 数据面板（移到中间偏左的位置，x=400）
+        c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(380, 80, 140, 160);
+        c.strokeStyle = '#6a6a75'; c.strokeRect(380, 80, 140, 160);
+        c.fillStyle = '#e0e0e0'; c.font = '14px Arial'; c.textAlign = 'left';
+        c.fillText(`拉力 F:`, 395, 105); c.fillStyle = '#ff6b6b'; c.fillText(`${this.weightCount} N`, 395, 125);
+        c.fillStyle = '#e0e0e0'; c.fillText(`总长 L:`, 395, 155); c.fillStyle = '#4dabf7'; c.fillText(`${(10 + this.weightCount * 2).toFixed(0)} cm`, 395, 175);
+        c.fillStyle = '#e0e0e0'; c.fillText(`伸长 Δx:`, 395, 205); c.fillStyle = '#ff922b'; c.fillText(`${this.weightCount * 2} cm`, 395, 225);
+
+        this.drawChart(c);
+    },
+    drawChart(c) {
+        // 绘制坐标轴
+        c.strokeStyle = '#6a6a75'; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(this.chartX, this.chartY); c.lineTo(this.chartX, this.chartY + this.chartH); c.lineTo(this.chartX + this.chartW, this.chartY + this.chartH); c.stroke();
+        
+        c.fillStyle = '#8b8b9a'; c.font = '14px Arial'; c.textAlign = 'left';
+        c.fillText('F (N)', this.chartX - 40, this.chartY + 15);
+        c.fillText('Δx (cm)', this.chartX + this.chartW - 30, this.chartY + this.chartH + 25);
+
+        c.textAlign = 'right'; c.fillStyle = '#adb5bd';
+        for (let i = 0; i <= 5; i++) {
+            const y = this.chartY + this.chartH - i * (this.chartH / 5);
+            c.fillText(`${i}`, this.chartX - 10, y + 5);
+            if (i > 0) { c.beginPath(); c.moveTo(this.chartX, y); c.lineTo(this.chartX + this.chartW, y); c.strokeStyle = 'rgba(255,255,255,0.05)'; c.stroke(); }
+        }
+        
+        c.textAlign = 'center';
+        for (let i = 0; i <= 5; i++) {
+            const x = this.chartX + i * (this.chartW / 5);
+            c.fillText(`${i * 2}`, x, this.chartY + this.chartH + 20);
+            if (i > 0) { c.beginPath(); c.moveTo(x, this.chartY); c.lineTo(x, this.chartY + this.chartH); c.strokeStyle = 'rgba(255,255,255,0.05)'; c.stroke(); }
+        }
+
+        if (this.weightCount > 0) {
+            const maxVal = 5; 
+            const xStep = this.chartW / maxVal, yStep = this.chartH / maxVal;
+            c.save(); c.beginPath(); c.moveTo(this.chartX, this.chartY + this.chartH);
+            c.lineTo(this.chartX + this.weightCount * xStep, this.chartY + this.chartH - this.weightCount * yStep);
+            c.strokeStyle = 'rgba(77, 171, 247, 0.6)'; c.lineWidth = 3; c.setLineDash([6, 4]); c.stroke(); c.restore();
+
+            for (let i = 1; i <= this.weightCount; i++) {
+                const px = this.chartX + i * xStep;
+                const py = this.chartY + this.chartH - i * yStep;
+                c.beginPath(); c.arc(px, py, i === this.weightCount ? 6 : 4, 0, Math.PI * 2);
+                c.fillStyle = i === this.weightCount ? '#ff922b' : '#4dabf7'; 
+                if (i === this.weightCount) { c.shadowColor = '#ff922b'; c.shadowBlur = 15; }
+                c.fill(); c.shadowBlur = 0;
+            }
+        }
+    },
+    update() {}
+};
+
+// ==========================================
+// 实验调度器
+// ==========================================
+const experiments = [null, exp1, exp2, exp3, exp4, exp5, exp6];
+const titles = ["", "实验一：球与软墙壁", "实验二：脚踩软地面", "实验三：桌面微小形变与光杠杆", "实验四：玻璃瓶微小形变", "实验五：弹性绳拉力", "实验六：胡克定律"];
+
+function switchExp(id) {
+    currentExp = id;
+    
+    // UI 切换
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`.nav-btn[data-exp="${id}"]`).classList.add('active');
+    document.getElementById('exp-title').innerText = titles[id];
+    
+    // 左侧控制区切换
+    document.getElementById('defaultHint').classList.add('hidden');
+    document.getElementById('btnDesk').classList.add('hidden');
+    document.getElementById('exp4Controls').classList.add('hidden');
+    document.getElementById('exp6Controls').classList.add('hidden');
+
+    if (id === 3) document.getElementById('btnDesk').classList.remove('hidden');
+    else if (id === 4) document.getElementById('exp4Controls').classList.remove('hidden');
+    else if (id === 6) document.getElementById('exp6Controls').classList.remove('hidden');
+    else document.getElementById('defaultHint').classList.remove('hidden');
+
+    // 初始化当前实验
+    if (experiments[id] && experiments[id].init) experiments[id].init();
+}
+
+// 导航绑定
+document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => switchExp(parseInt(e.target.dataset.exp)));
+});
+
+// 按钮绑定 (实验三)
+const btnDesk = document.getElementById('btnDesk');
+btnDesk.addEventListener('mousedown', () => { exp3.isPressed = true; exp3.targetOffset = 25; });
+btnDesk.addEventListener('mouseup', () => { exp3.isPressed = false; exp3.targetOffset = 0; });
+btnDesk.addEventListener('mouseleave', () => { exp3.isPressed = false; exp3.targetOffset = 0; });
+
+// 按钮绑定 (实验四)
+const btnLong = document.getElementById('btnBottleLong');
+const btnShort = document.getElementById('btnBottleShort');
+btnLong.addEventListener('mousedown', () => { exp4.mode = 'long'; });
+btnLong.addEventListener('mouseup', () => { exp4.mode = 'none'; });
+btnLong.addEventListener('mouseleave', () => { exp4.mode = 'none'; });
+btnShort.addEventListener('mousedown', () => { exp4.mode = 'short'; });
+btnShort.addEventListener('mouseup', () => { exp4.mode = 'none'; });
+btnShort.addEventListener('mouseleave', () => { exp4.mode = 'none'; });
+
+// 按钮绑定 (实验六)
+document.getElementById('btnAddWeight').addEventListener('click', () => { if(exp6.weightCount < 5) exp6.weightCount++; });
+document.getElementById('btnRemoveWeight').addEventListener('click', () => { if(exp6.weightCount > 0) exp6.weightCount--; });
+
+// ==========================================
+// 交互事件映射
+// ==========================================
+canvas.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    mousePos = getMousePos(e);
+    const exp = experiments[currentExp];
+    if (exp && exp.down) exp.down(mousePos);
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isMouseDown) return;
+    mousePos = getMousePos(e);
+    const exp = experiments[currentExp];
+    if (exp && exp.move) exp.move(mousePos);
+});
+
+window.addEventListener('mouseup', () => {
+    isMouseDown = false;
+    const exp = experiments[currentExp];
+    if (exp && exp.up) exp.up();
+});
+
+// 触摸屏支持
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    isMouseDown = true;
+    mousePos = getMousePos(e.touches[0]);
+    const exp = experiments[currentExp];
+    if (exp && exp.down) exp.down(mousePos);
+}, {passive: false});
+
+window.addEventListener('touchmove', (e) => {
+    if (!isMouseDown) return;
+    mousePos = getMousePos(e.touches[0]);
+    const exp = experiments[currentExp];
+    if (exp && exp.move) exp.move(mousePos);
+}, {passive: false});
+
+window.addEventListener('touchend', () => {
+    isMouseDown = false;
+    const exp = experiments[currentExp];
+    if (exp && exp.up) exp.up();
+});
+
+// ==========================================
+// 全局动画循环
+// ==========================================
+function animate() {
+    const exp = experiments[currentExp];
+    if (exp) {
+        if (exp.update) exp.update();
+        if (exp.draw) exp.draw(ctx);
+    }
+    requestAnimationFrame(animate);
+}
+
+// 启动
+switchExp(1);
+animate();
+</script>
+</body>
+</html>

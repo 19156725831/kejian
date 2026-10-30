@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>二维质点系质心定理演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #eef2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 1150px;
+            max-width: 100%;
+            height: 700px;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background-color: #fafafa;
+            /* 浅浅的网格背景 */
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 380px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 20px;
+            text-align: center;
+            color: #ecf0f1;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
+        }
+
+        .formula-box {
+            background: #1a252f;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #f1c40f;
+        }
+
+        .formula-title {
+            color: #f1c40f;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .math-formula {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 18px;
+            line-height: 2.2;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .fraction {
+            display: inline-flex;
+            flex-direction: column;
+            text-align: center;
+            vertical-align: middle;
+            margin: 0 5px;
+        }
+        
+        .fraction .num {
+            border-bottom: 1px solid #ecf0f1;
+            padding: 0 5px;
+        }
+        
+        .fraction .den {
+            padding: 0 5px;
+        }
+
+        .data-box {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .color-A { color: #3498db; }
+        .color-B { color: #2ecc71; }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .calc-step {
+            background: #c0392b;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #fff;
+            word-break: break-all;
+            line-height: 1.6;
+        }
+        
+        .highlight { color: #f1c40f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="canvas-wrapper">
+        <canvas id="physicsCanvas"></canvas>
+    </div>
+    
+    <div class="sidebar">
+        <h2>质心定理 (Center of Mass)</h2>
+        
+        <!-- 公式展示区 -->
+        <div class="formula-box">
+            <div class="formula-title">📍 二维质点系质心坐标公式</div>
+            <div class="math-formula">
+                <div>
+                    x<sub>c</sub> = 
+                    <div class="fraction">
+                        <span class="num">m<sub>1</sub>x<sub>1</sub> + m<sub>2</sub>x<sub>2</sub></span>
+                        <span class="den">m<sub>1</sub> + m<sub>2</sub></span>
+                    </div>
+                </div>
+                <div style="margin-left: 10px;">
+                    y<sub>c</sub> = 
+                    <div class="fraction">
+                        <span class="num">m<sub>1</sub>y<sub>1</sub> + m<sub>2</sub>y<sub>2</sub></span>
+                        <span class="den">m<sub>1</sub> + m<sub>2</sub></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据与滑块区 -->
+        <div class="data-box">
+            <div class="control-group">
+                <label class="color-A">质点 A (蓝) <span id="coordA">(0, 0)</span></label>
+                <input type="range" id="sliderMa" min="1" max="20" value="5" step="1" style="accent-color: #3498db;">
+                <div style="text-align:right; font-size:12px; color:#95a5a6;">质量 m<sub>1</sub>: <span id="valMa" class="color-A">5</span> kg</div>
+            </div>
+
+            <div class="control-group">
+                <label class="color-B">质点 B (绿) <span id="coordB">(0, 0)</span></label>
+                <input type="range" id="sliderMb" min="1" max="20" value="10" step="1" style="accent-color: #2ecc71;">
+                <div style="text-align:right; font-size:12px; color:#95a5a6;">质量 m<sub>2</sub>: <span id="valMb" class="color-B">10</span> kg</div>
+            </div>
+            <div style="font-size: 12px; color:#95a5a6; text-align:center; margin-top:5px;">
+                * 在左侧网格中拖拽 A 和 B 改变坐标
+            </div>
+        </div>
+
+        <!-- 计算过程展示区 -->
+        <div class="calc-step">
+            <div style="color:#f1c40f; font-weight:bold; margin-bottom:5px;">📝 实时计算代入：</div>
+            <div>x<sub>c</sub> = (<span id="calcX"></span>) / <span id="calcM"></span></div>
+            <div>y<sub>c</sub> = (<span id="calcY"></span>) / <span id="calcM"></span></div>
+            <hr style="border:0; border-top:1px solid #e74c3c; margin:5px 0;">
+            <div>重心坐标 C：<span id="coordC" style="font-size:15px;"></span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 物理坐标系参数
+    const gridSize = 30; // 每个格子代表30像素
+    let originX = 0;     // 屏幕上的原点X
+    let originY = 0;     // 屏幕上的原点Y
+
+    // 质点状态 (使用物理坐标)
+    const state = {
+        a: { x: -3, y: 2, m: 5, color: '#3498db', label: 'A' },  // 物理坐标 (x, y)
+        b: { x: 4, y: -2, m: 10, color: '#2ecc71', label: 'B' }
+    };
+
+    let dragging = null;
+
+    // DOM 元素
+    const sliderMa = document.getElementById('sliderMa');
+    const sliderMb = document.getElementById('sliderMb');
+    const valMa = document.getElementById('valMa');
+    const valMb = document.getElementById('valMb');
+    const coordAEl = document.getElementById('coordA');
+    const coordBEl = document.getElementById('coordB');
+    const coordCEl = document.getElementById('coordC');
+    const calcXEl = document.getElementById('calcX');
+    const calcYEl = document.getElementById('calcY');
+    const calcMEl = document.getElementById('calcM');
+
+    function resizeCanvas() {
+        const wrapper = canvas.parentElement;
+        canvas.width = wrapper.clientWidth;
+        canvas.height = wrapper.clientHeight;
+        
+        // 设定坐标原点在画布偏左下位置
+        originX = canvas.width / 2;
+        originY = canvas.height / 2 + 50;
+        
+        draw();
+    }
+
+    // 物理坐标转屏幕坐标
+    function toScreen(x, y) {
+        return {
+            sx: originX + x * gridSize,
+            sy: originY - y * gridSize
+        };
+    }
+
+    // 屏幕坐标转物理坐标 (并四舍五入到最近的整数格子)
+    function toPhysics(sx, sy) {
+        return {
+            x: Math.round((sx - originX) / gridSize),
+            y: Math.round((originY - sy) / gridSize)
+        };
+    }
+
+    function getRadius(mass) {
+        return 8 + Math.sqrt(mass) * 4;
+    }
+
+    // 绘制坐标系
+    function drawAxes() {
+        ctx.beginPath();
+        ctx.strokeStyle = '#7f8c8d';
+        ctx.lineWidth = 2;
+        
+        // X轴
+        ctx.moveTo(20, originY);
+        ctx.lineTo(canvas.width - 20, originY);
+        
+        // Y轴
+        ctx.moveTo(originX, canvas.height - 20);
+        ctx.lineTo(originX, 20);
+        ctx.stroke();
+
+        // 画箭头
+        ctx.beginPath();
+        ctx.fillStyle = '#7f8c8d';
+        // X轴箭头
+        ctx.moveTo(canvas.width - 20, originY);
+        ctx.lineTo(canvas.width - 30, originY - 5);
+        ctx.lineTo(canvas.width - 30, originY + 5);
+        // Y轴箭头
+        ctx.moveTo(originX, 20);
+        ctx.lineTo(originX - 5, 30);
+        ctx.lineTo(originX + 5, 30);
+        ctx.fill();
+
+        // 画刻度和数字
+        ctx.fillStyle = '#95a5a6';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // X轴刻度
+        for (let x = -10; x <= 10; x++) {
+            if (x === 0) continue;
+            const { sx, sy } = toScreen(x, 0);
+            if (sx > 20 && sx < canvas.width - 20) {
+                ctx.beginPath();
+                ctx.moveTo(sx, sy - 3);
+                ctx.lineTo(sx, sy + 3);
+                ctx.stroke();
+                ctx.fillText(x, sx, sy + 5);
+            }
+        }
+
+        // Y轴刻度
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = -10; y <= 10; y++) {
+            if (y === 0) continue;
+            const { sx, sy } = toScreen(0, y);
+            if (sy > 20 && sy < canvas.height - 20) {
+                ctx.beginPath();
+                ctx.moveTo(sx - 3, sy);
+                ctx.lineTo(sx + 3, sy);
+                ctx.stroke();
+                ctx.fillText(y, sx - 8, sy);
+            }
+        }
+
+        // 原点 O
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('O', originX - 5, originY + 5);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawAxes();
+
+        const { a, b } = state;
+        const pA = toScreen(a.x, a.y);
+        const pB = toScreen(b.x, b.y);
+
+        // 1. 计算质心 (物理坐标)
+        const totalMass = a.m + b.m;
+        const cx = (a.m * a.x + b.m * b.x) / totalMass;
+        const cy = (a.m * a.y + b.m * b.y) / totalMass;
+        const pC = toScreen(cx, cy);
+
+        // 2. 画连线
+        ctx.beginPath();
+        ctx.moveTo(pA.sx, pA.sy);
+        ctx.lineTo(pB.sx, pB.sy);
+        ctx.strokeStyle = 'rgba(189, 195, 199, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. 画质点
+        drawParticle(pA.sx, pA.sy, a.m, a.color, a.label);
+        drawParticle(pB.sx, pB.sy, b.m, b.color, b.label);
+
+        // 4. 画质心
+        drawCenterOfMass(pC.sx, pC.sy);
+
+        // 5. 更新 UI 文本
+        updateUI(a, b, cx, cy, totalMass);
+    }
+
+    function drawParticle(sx, sy, m, color, label) {
+        const r = getRadius(m);
+        
+        // 坐标投影虚线 (辅助看坐标)
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx, originY);
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(originX, sy);
+        ctx.strokeStyle = color + '55'; // 半透明
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 圆球
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 字母标签
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, sx, sy);
+    }
+
+    function drawCenterOfMass(sx, sy) {
+        // 靶心
+        ctx.beginPath();
+        ctx.arc(sx, sy, 12, 0, Math.PI * 2);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fill();
+        
+        // 十字准星
+        ctx.beginPath();
+        ctx.moveTo(sx - 18, sy);
+        ctx.lineTo(sx + 18, sy);
+        ctx.moveTo(sx, sy - 18);
+        ctx.lineTo(sx, sy + 18);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // 标签
+        ctx.fillStyle = '#e74c3c';
+        ctx.font = 'bold 13px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('C (质心)', sx + 15, sy - 10);
+    }
+
+    function updateUI(a, b, cx, cy, totalMass) {
+        coordAEl.textContent = `(${a.x}, ${a.y})`;
+        coordBEl.textContent = `(${b.x}, ${b.y})`;
+        
+        // 格式化保留一位小数
+        coordCEl.textContent = `(${cx.toFixed(1)}, ${cy.toFixed(1)})`;
+        
+        // 代入过程
+        calcXEl.innerHTML = `${a.m}×(${a.x}) + ${b.m}×(${b.x})`;
+        calcYEl.innerHTML = `${a.m}×(${a.y}) + ${b.m}×(${b.y})`;
+        calcMEl.textContent = `${a.m} + ${b.m} = ${totalMass}`;
+    }
+
+    // 交互逻辑
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        const pA = toScreen(state.a.x, state.a.y);
+        const pB = toScreen(state.b.x, state.b.y);
+
+        if (Math.hypot(mx - pA.sx, my - pA.sy) < getRadius(state.a.m) + 5) {
+            dragging = 'a';
+        } else if (Math.hypot(mx - pB.sx, my - pB.sy) < getRadius(state.b.m) + 5) {
+            dragging = 'b';
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        if (dragging) {
+            const phys = toPhysics(mx, my);
+            // 限制物理坐标范围，比如 -10 到 10
+            state[dragging].x = Math.max(-10, Math.min(10, phys.x));
+            state[dragging].y = Math.max(-10, Math.min(10, phys.y));
+            draw();
+            canvas.style.cursor = 'grabbing';
+        } else {
+            const pA = toScreen(state.a.x, state.a.y);
+            const pB = toScreen(state.b.x, state.b.y);
+            if (Math.hypot(mx - pA.sx, my - pA.sy) < getRadius(state.a.m) + 5 ||
+                Math.hypot(mx - pB.sx, my - pB.sy) < getRadius(state.b.m) + 5) {
+                canvas.style.cursor = 'grab';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        dragging = null;
+        canvas.style.cursor = 'default';
+    });
+
+    sliderMa.addEventListener('input', (e) => {
+        state.a.m = parseInt(e.target.value);
+        valMa.textContent = state.a.m;
+        draw();
+    });
+
+    sliderMb.addEventListener('input', (e) => {
+        state.b.m = parseInt(e.target.value);
+        valMb.textContent = state.b.m;
+        draw();
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+</script>
+</body>
+</html>

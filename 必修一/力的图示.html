@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>力的图示 (标尺可调版) - 物理教学演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #eef2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 1050px;
+            max-width: 100%;
+            height: 650px;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            cursor: crosshair;
+            background-color: #fafafa;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            margin: 0 0 5px 0;
+            font-size: 20px;
+            text-align: center;
+            color: #ecf0f1;
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #34495e;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .control-group label {
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            color: #bdc3c7;
+        }
+
+        .control-group label span {
+            color: #3498db;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #3498db;
+            cursor: pointer;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #95a5a6;
+            margin-top: -4px;
+            text-align: right;
+        }
+
+        .legend-panel {
+            margin-top: auto;
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+        
+        .legend-panel h3 {
+            margin: 0 0 10px 0;
+            font-size: 15px;
+            color: #c0392b;
+        }
+
+        .legend-panel p { margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="canvas-wrapper">
+        <canvas id="forceCanvas"></canvas>
+    </div>
+    
+    <div class="sidebar">
+        <h2>力的图示作图</h2>
+        
+        <div class="control-group">
+            <label>力的大小 (N) <span id="valF">30</span></label>
+            <input type="range" id="sliderF" min="5" max="100" value="30" step="5">
+        </div>
+
+        <div class="control-group">
+            <label>力的方向 (°) <span id="valA">0</span></label>
+            <input type="range" id="sliderA" min="0" max="360" value="0" step="5">
+        </div>
+
+        <div class="control-group" style="border: 2px solid #e67e22; background: #2c3e50;">
+            <label style="color: #f1c40f;">📏 标尺代表的大小 (N) <span id="valScale">10</span></label>
+            <input type="range" id="sliderScale" min="5" max="50" value="10" step="5" style="accent-color: #e67e22;">
+            <div class="hint" style="color: #e67e22;">调节标尺，箭头长度会按比例缩放</div>
+        </div>
+        
+        <div class="control-group">
+            <label>作用点位置</label>
+            <div class="hint">在左侧画布上拖拽黑色十字</div>
+        </div>
+
+        <div class="legend-panel">
+            <h3>💡 作图规范</h3>
+            <p>1. 选定标度（标尺）</p>
+            <p>2. 确定作用点（十字）</p>
+            <p>3. 沿力的方向画线段</p>
+            <p>4. 线段长度 = 力 / 标尺 × 标尺长度</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('forceCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // 状态变量
+    let state = {
+        origin: { x: 250, y: 300 }, // 作用点位置
+        force: 30,                  // 力的大小 (N)
+        angle: 0,                   // 角度 (度)
+        scaleValue: 10,             // 标尺代表的力 (N)
+        fixedScaleLengthPx: 100     // 标尺在屏幕上的固定像素长度
+    };
+
+    // 计算当前比例尺 (像素/牛顿)
+    function getScalePx() {
+        return state.fixedScaleLengthPx / state.scaleValue;
+    }
+
+    const sliderF = document.getElementById('sliderF');
+    const sliderA = document.getElementById('sliderA');
+    const sliderScale = document.getElementById('sliderScale');
+    
+    const valF = document.getElementById('valF');
+    const valA = document.getElementById('valA');
+    const valScale = document.getElementById('valScale');
+
+    // 设置画布尺寸
+    function resizeCanvas() {
+        const wrapper = canvas.parentElement;
+        canvas.width = wrapper.clientWidth;
+        canvas.height = wrapper.clientHeight;
+        draw();
+    }
+
+    // 绘制箭头头部
+    function drawArrowhead(x, y, angleRad, color) {
+        const headlen = 16;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x - headlen * Math.cos(angleRad - Math.PI / 7), y - headlen * Math.sin(angleRad - Math.PI / 7));
+        ctx.lineTo(x - headlen * Math.cos(angleRad + Math.PI / 7), y - headlen * Math.sin(angleRad + Math.PI / 7));
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    // 主绘制函数
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const { origin, force, angle, scaleValue, fixedScaleLengthPx } = state;
+        const currentScale = getScalePx();
+        
+        // 计算终点
+        const rad = -angle * Math.PI / 180;
+        const lengthPx = force * currentScale;
+        const endX = origin.x + lengthPx * Math.cos(rad);
+        const endY = origin.y + lengthPx * Math.sin(rad);
+
+        // 1. 绘制作用点十字
+        ctx.beginPath();
+        ctx.moveTo(origin.x - 10, origin.y);
+        ctx.lineTo(origin.x + 10, origin.y);
+        ctx.moveTo(origin.x, origin.y - 10);
+        ctx.lineTo(origin.x, origin.y + 10);
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 2. 绘制力的线段
+        ctx.beginPath();
+        ctx.moveTo(origin.x, origin.y);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 3. 绘制箭头
+        drawArrowhead(endX, endY, rad, '#e74c3c');
+
+        // 4. 标注文字
+        ctx.font = 'bold 15px Arial';
+        ctx.fillStyle = '#e74c3c';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        let textX = endX + 20 * Math.cos(rad);
+        let textY = endY + 20 * Math.sin(rad);
+        if (angle > 90 && angle < 270) ctx.textBaseline = 'top';
+        
+        ctx.fillText(`F = ${force}N`, textX, textY);
+
+        // 5. 绘制右下角【标尺】
+        const legendX = canvas.width - 200;
+        const legendY = canvas.height - 50;
+
+        // 标尺线（固定在屏幕上100px长）
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY);
+        ctx.lineTo(legendX + fixedScaleLengthPx, legendY);
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 标尺竖线
+        ctx.beginPath();
+        ctx.moveTo(legendX, legendY - 8);
+        ctx.lineTo(legendX, legendY + 8);
+        ctx.moveTo(legendX + fixedScaleLengthPx, legendY - 8);
+        ctx.lineTo(legendX + fixedScaleLengthPx, legendY + 8);
+        ctx.stroke();
+
+        // 标尺文字
+        ctx.font = 'bold 14px Arial';
+        ctx.fillStyle = '#d35400';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`标度: ${scaleValue} N`, legendX + fixedScaleLengthPx / 2, legendY + 12);
+    }
+
+    // 鼠标拖拽
+    let isDragging = false;
+
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const dist = Math.hypot(mouseX - state.origin.x, mouseY - state.origin.y);
+        if (dist < 30) {
+            isDragging = true;
+            canvas.style.cursor = 'grabbing';
+        }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (isDragging) {
+            const gridSize = 25;
+            state.origin.x = Math.round(mouseX / gridSize) * gridSize;
+            state.origin.y = Math.round(mouseY / gridSize) * gridSize;
+            
+            state.origin.x = Math.max(25, Math.min(canvas.width - 25, state.origin.x));
+            state.origin.y = Math.max(25, Math.min(canvas.height - 25, state.origin.y));
+            
+            draw();
+        } else {
+            const dist = Math.hypot(mouseX - state.origin.x, mouseY - state.origin.y);
+            canvas.style.cursor = dist < 30 ? 'grab' : 'crosshair';
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        isDragging = false;
+        canvas.style.cursor = 'crosshair';
+    });
+
+    // 滑块事件
+    sliderF.addEventListener('input', (e) => {
+        state.force = parseInt(e.target.value);
+        valF.textContent = state.force;
+        draw();
+    });
+
+    sliderA.addEventListener('input', (e) => {
+        state.angle = parseInt(e.target.value);
+        valA.textContent = state.angle;
+        draw();
+    });
+
+    sliderScale.addEventListener('input', (e) => {
+        state.scaleValue = parseInt(e.target.value);
+        valScale.textContent = state.scaleValue;
+        draw();
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+</script>
+</body>
+</html>
