@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>摩擦力专题仿真实验室 (声音修复版)</title>
+    <style>
+        :root {
+            --bg-color: #1e1e24;
+            --panel-bg: #2b2b36;
+            --panel-border: #3f3f4e;
+            --text-main: #e0e0e0;
+            --text-muted: #8b8b9a;
+            --accent-blue: #4dabf7;
+            --accent-orange: #ff922b;
+            --accent-red: #fa5252;
+            --accent-green: #2ecc71;
+            --accent-yellow: #f1c40f;
+        }
+
+        * { box-sizing: border-box; user-select: none; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: #22222a;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 60px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .logo { font-size: 18px; font-weight: 600; letter-spacing: 1px; color: #fff; }
+        .logo span { color: var(--accent-blue); }
+
+        .scene-tabs { display: flex; gap: 10px; }
+        .scene-btn {
+            background: #3a3a48; border: 1px solid #4a4a5a; color: var(--text-muted);
+            padding: 8px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .scene-btn.active {
+            background: linear-gradient(135deg, #4dabf7, #2980b9);
+            border-color: #4dabf7; color: #fff; box-shadow: 0 0 15px rgba(77, 171, 247, 0.4);
+        }
+
+        .main-content { flex: 1; display: flex; overflow: hidden; }
+
+        .canvas-container {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, #282833 0%, #1a1a20 100%);
+            position: relative;
+        }
+
+        canvas {
+            background: #1a1a20; border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
+            cursor: default; max-width: 95%; max-height: 95%;
+        }
+
+        .sidebar {
+            width: 320px; background: var(--panel-bg); border-left: 1px solid var(--panel-border);
+            padding: 15px; display: flex; flex-direction: column; gap: 12px; z-index: 10;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.4); overflow-y: auto;
+        }
+
+        .control-group {
+            background: #22222a; padding: 12px; border-radius: 8px; border: 1px solid #333;
+        }
+        .control-title { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: bold; }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .ctrl-btn {
+            flex: 1; padding: 6px 8px; border: none; border-radius: 6px; color: white;
+            font-weight: bold; cursor: pointer; transition: 0.1s; font-size: 12px;
+            background: #3a3a48; border: 1px solid #4a4a5a;
+        }
+        .ctrl-btn:hover { background: #454556; }
+        .ctrl-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); color: white; }
+        
+        .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .btn-orange { background: linear-gradient(135deg, #f39c12, #e67e22); }
+
+        .data-panel {
+            background: #1a1a20; border-radius: 8px; padding: 15px; border-left: 4px solid var(--accent-red);
+            font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.7;
+            order: -1; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .data-label { color: var(--text-muted); }
+        .data-val { color: #fff; font-weight: bold; }
+        
+        .val-force { color: var(--accent-red); }
+        .val-friction { color: var(--accent-blue); }
+        .val-gravity { color: #ced4da; }
+        .val-normal { color: var(--accent-orange); }
+        .val-v { color: var(--accent-yellow); }
+        .val-a { color: #e67e22; }
+        .val-status { color: var(--accent-green); }
+
+        input[type="range"] { width: 100%; accent-color: var(--accent-red); margin-top: 5px; }
+        .slider-val { color: var(--accent-red); font-size: 16px; font-weight: bold; text-align: center; margin-top: 5px; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">摩擦力 <span>仿真实验室</span></div>
+        <div class="scene-tabs">
+            <button class="scene-btn active" data-scene="1">水平拉力实验</button>
+            <button class="scene-btn" data-scene="2">斜面滑动实验</button>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="canvas-container" id="canvasWrapper">
+            <canvas id="mainCanvas" width="850" height="550"></canvas>
+            <div style="position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); padding: 8px 15px; border-radius: 8px; border-left: 4px solid var(--accent-blue); font-weight: bold; color: var(--accent-blue); font-family: monospace; font-size: 16px;">
+                g = 10 m/s²
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="data-panel">
+                <div class="data-row">
+                    <span class="data-label">运动状态:</span>
+                    <span class="data-val val-status" id="uiStatus">静止</span>
+                </div>
+                <div class="data-row" style="margin-top: 8px; border-top: 1px dashed #444; padding-top: 8px;">
+                    <span class="data-label">加速度 a:</span>
+                    <span class="data-val val-a" id="uiAccel">0.00 m/s²</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">当前速度 v:</span>
+                    <span class="data-val val-v" id="uiVelocity">0.00 m/s</span>
+                </div>
+                <div class="data-row" style="margin-top: 8px; border-top: 1px dashed #444; padding-top: 8px;">
+                    <span class="data-label">重力 G:</span>
+                    <span class="data-val val-gravity" id="uiGravity">10.00 N</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">支持力 N:</span>
+                    <span class="data-val val-normal" id="uiNormal">10.00 N</span>
+                </div>
+                <div class="data-row" style="margin-top: 8px; border-top: 1px dashed #444; padding-top: 8px;">
+                    <span class="data-label">拉力 F:</span>
+                    <span class="data-val val-force" id="uiForce">0.00 N</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">摩擦力 f:</span>
+                    <span class="data-val val-friction" id="uiFriction">0.00 N</span>
+                </div>
+            </div>
+
+            <div id="scene1-force-input" class="control-group">
+                <div class="control-title">施加拉力 F</div>
+                <input type="range" id="forceSlider" min="0" max="30" step="0.5" value="0">
+                <div class="slider-val" id="forceSliderVal">0.0 N</div>
+            </div>
+
+            <div id="scene2-angle-input" class="control-group hidden">
+                <div class="control-title">斜面倾角 θ</div>
+                <input type="range" id="angleSlider" min="0" max="60" value="0" style="accent-color: var(--accent-blue);">
+                <div class="slider-val" id="angleSliderVal" style="color: var(--accent-blue);">0°</div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">接触面材质</div>
+                <div class="btn-row">
+                    <button class="ctrl-btn active" data-mat="wood">木板 (μ=0.4)</button>
+                    <button class="ctrl-btn" data-mat="glass">玻璃 (μ=0.3)</button>
+                    <button class="ctrl-btn" data-mat="sand">沙纸 (μ=0.8)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-title">物体的正压力 (质量)</div>
+                <div class="btn-row">
+                    <button class="ctrl-btn btn-orange" id="btnRemoveWeight">减轻</button>
+                    <button class="ctrl-btn btn-green" id="btnAddWeight">增加</button>
+                </div>
+                <div style="text-align: center; margin-top: 8px; font-size: 13px; color: var(--accent-blue);">
+                    当前质量 m: <span id="massDisplay">1.0</span> kg
+                </div>
+            </div>
+
+            <div class="control-group" style="border: none; padding: 0;">
+                <button class="ctrl-btn" id="btnReset" style="width: 100%; padding: 10px; font-size: 14px; background: #e74c3c;">重置当前实验状态</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ==========================================
+// 声音引擎
+// ==========================================
+class SoundEngine {
+    constructor() { 
+        this.ctx = null; 
+        this.isPlaying = false; 
+        this.osc1 = null; 
+        this.osc2 = null; 
+        this.gain = null; 
+        this.filter = null; 
+        this.hasSnapped = false; 
+    }
+    
+    init() { 
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+    
+    startTension() {
+        if (!this.ctx || this.isPlaying) return;
+        this.isPlaying = true; 
+        const now = this.ctx.currentTime;
+        this.osc1 = this.ctx.createOscillator(); 
+        this.osc1.type = 'sine'; 
+        this.osc1.frequency.value = 300;
+        this.osc2 = this.ctx.createOscillator(); 
+        this.osc2.type = 'triangle'; 
+        this.osc2.frequency.value = 303;
+        
+        this.gain = this.ctx.createGain(); 
+        this.gain.gain.setValueAtTime(0, now); 
+        this.gain.gain.linearRampToValueAtTime(0.1, now + 0.05);
+        
+        this.filter = this.ctx.createBiquadFilter(); 
+        this.filter.type = 'lowpass'; 
+        this.filter.frequency.value = 1000;
+        
+        this.osc1.connect(this.gain); 
+        this.osc2.connect(this.gain); 
+        this.gain.connect(this.filter); 
+        this.filter.connect(this.ctx.destination);
+        
+        this.osc1.start(); 
+        this.osc2.start(); 
+        this.hasSnapped = false;
+    }
+    
+    updateTension(ratio) {
+        if (!this.isPlaying || this.hasSnapped || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const freq = 300 + ratio * 400; 
+        this.osc1.frequency.setTargetAtTime(freq, now, 0.05); 
+        this.osc2.frequency.setTargetAtTime(freq + 3, now, 0.05);
+        this.filter.frequency.setTargetAtTime(1000 + ratio * 2000, now, 0.05);
+    }
+    
+    stopTension() {
+        if (!this.ctx || !this.isPlaying) return;
+        const now = this.ctx.currentTime; 
+        this.gain.gain.setTargetAtTime(0, now, 0.05);
+        setTimeout(() => { 
+            try { 
+                this.osc1.stop(); 
+                this.osc2.stop(); 
+                this.osc1.disconnect(); 
+                this.osc2.disconnect(); 
+                this.gain.disconnect(); 
+                this.filter.disconnect(); 
+            } catch(e) {} 
+            this.isPlaying = false; 
+        }, 100);
+    }
+    
+    playSnap() {
+        if (!this.ctx) return; 
+        this.hasSnapped = true; 
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator(); 
+        const gain = this.ctx.createGain();
+        osc.type = 'sine'; 
+        osc.frequency.setValueAtTime(800, now); 
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+        gain.gain.setValueAtTime(0.3, now); 
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.connect(gain); 
+        gain.connect(this.ctx.destination); 
+        osc.start(); 
+        osc.stop(now + 0.1);
+    }
+}
+const soundEngine = new SoundEngine();
+
+// ==========================================
+// 核心物理逻辑
+// ==========================================
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const g = 10; 
+
+let currentScene = 1;
+let lastTime = performance.now();
+
+let baseMass = 1.0; let weightCount = 0; let mass = 1.0;
+let mu_s = 0.4; let mu_k = 0.4;
+
+let boxX = 150; let v = 0; let a = 0; let currentForce = 0; let isSliding = false;
+
+let inclineAngle = 0; let inclinePos = 200; let inclineV = 0; let inclineA = 0;
+
+function updateUI(f, friction, status, accel, vel, G_val, N_val) {
+    document.getElementById('uiForce').innerText = `${f.toFixed(2)} N`;
+    document.getElementById('uiFriction').innerText = `${friction.toFixed(2)} N`;
+    document.getElementById('uiAccel').innerText = `${accel.toFixed(2)} m/s²`;
+    document.getElementById('uiVelocity').innerText = `${vel.toFixed(2)} m/s`;
+    document.getElementById('uiGravity').innerText = `${G_val.toFixed(2)} N`;
+    document.getElementById('uiNormal').innerText = `${N_val.toFixed(2)} N`;
+    const statusEl = document.getElementById('uiStatus');
+    statusEl.innerText = status;
+    if (status === '静止') statusEl.style.color = 'var(--accent-green)';
+    else if (status === '临界') statusEl.style.color = 'var(--accent-orange)';
+    else statusEl.style.color = 'var(--accent-red)';
+}
+
+function drawArrow(c, x1, y1, x2, y2, color, lineWidth = 3) {
+    const headlen = 14; const angle = Math.atan2(y2 - y1, x2 - x1);
+    c.save(); c.shadowColor = color; c.shadowBlur = 8;
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2);
+    c.strokeStyle = color; c.lineWidth = lineWidth; c.lineCap = 'round'; c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
+    c.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
+    c.closePath(); c.fillStyle = color; c.fill(); c.restore();
+}
+
+function drawTextLabel(c, text, x, y, color) {
+    c.font = 'bold 15px Arial'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const textWidth = c.measureText(text).width;
+    c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(x - textWidth/2 - 6, y - 12, textWidth + 12, 24);
+    c.fillStyle = color; c.fillText(text, x, y);
+}
+
+function initScene1() {
+    mass = baseMass + weightCount; boxX = 150; v = 0; a = 0; currentForce = 0;
+    document.getElementById('forceSlider').value = 0; document.getElementById('forceSliderVal').innerText = "0.0 N";
+    isSliding = false; soundEngine.stopTension();
+}
+
+function updateScene1(dt) {
+    mass = baseMass + weightCount;
+    const G = mass * g; const N = G; const f_max = mu_s * N; const f_slide = mu_k * N;
+    currentForce = parseFloat(document.getElementById('forceSlider').value);
+    document.getElementById('forceSliderVal').innerText = `${currentForce.toFixed(1)} N`;
+
+    if (!isSliding) {
+        if (currentForce > f_max) { 
+            isSliding = true; 
+            soundEngine.stopTension(); 
+            soundEngine.playSnap(); 
+        } else {
+            if (currentForce > 0) { 
+                if (!soundEngine.isPlaying) soundEngine.startTension(); 
+                soundEngine.updateTension(currentForce / f_max); 
+            } else { 
+                soundEngine.stopTension(); 
+                soundEngine.hasSnapped = false; 
+            }
+            v = 0; a = 0;
+        }
+    }
+    if (isSliding) {
+        let netForce = currentForce - f_slide;
+        if (currentForce < f_slide) {
+            netForce = currentForce - f_slide; 
+            if (v <= 0) { isSliding = false; v = 0; a = 0; soundEngine.stopTension(); soundEngine.hasSnapped = false; }
+        }
+        if (isSliding) {
+            a = netForce / mass; v += a * dt; if (v < 0) v = 0;
+            boxX += v * dt * 20; 
+            if (boxX > canvas.width) boxX = -120;
+        }
+    }
+    let friction = isSliding ? f_slide : currentForce;
+    let status = (currentForce > f_max) ? '滑动' : (currentForce >= f_max * 0.95 ? '临界' : '静止');
+    updateUI(currentForce, friction, status, a, v, G, N);
+}
+
+function drawScene1() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#2b2b36'; ctx.fillRect(0, 450, canvas.width, 100);
+    ctx.strokeStyle = '#6a6a75'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 450); ctx.lineTo(canvas.width, 450); ctx.stroke();
+    
+    const f_max = mu_s * mass * g; const f_slide = mu_k * mass * g;
+    let friction = isSliding ? f_slide : currentForce;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+    const grad = ctx.createLinearGradient(boxX, 350, boxX, 450);
+    grad.addColorStop(0, '#d4a373'); grad.addColorStop(1, '#8c5a35');
+    ctx.fillStyle = grad; ctx.fillRect(boxX, 350, 100, 100);
+    ctx.strokeStyle = '#5c3a21'; ctx.lineWidth = 3; ctx.strokeRect(boxX, 350, 100, 100);
+    for (let i = 0; i < weightCount; i++) {
+        ctx.fillStyle = '#adb5bd'; ctx.fillRect(boxX + 15 + i*25, 320, 20, 30);
+        ctx.strokeStyle = '#6c757d'; ctx.strokeRect(boxX + 15 + i*25, 320, 20, 30);
+    }
+    ctx.restore();
+
+    const springY = 400, springStart = boxX + 100;
+    const handleX = springStart + 80 + currentForce * 2; 
+    ctx.fillStyle = '#ced4da'; ctx.fillRect(springStart + 10, springY - 15, 100, 30);
+    ctx.beginPath(); ctx.moveTo(springStart, springY);
+    for(let i=0; i<15; i++) {
+        ctx.quadraticCurveTo(springStart + ((handleX - springStart - 10)/15)*(i+0.5), springY + 10, springStart + ((handleX - springStart - 10)/15)*(i+1), springY);
+    }
+    ctx.strokeStyle = '#adb5bd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(handleX, springY, 10, 0, Math.PI * 2); ctx.fillStyle = '#ff922b'; ctx.fill();
+
+    const forceScale = 4;
+    if (currentForce > 0.1) {
+        drawArrow(ctx, boxX + 100, 450, boxX + 100 + currentForce * forceScale, 450, '#ff6b6b', 5);
+        drawTextLabel(ctx, `F=${currentForce.toFixed(1)}N`, boxX + 100 + currentForce * forceScale + 40, 440, '#ff6b6b');
+    }
+    if (friction > 0.1) {
+        drawArrow(ctx, boxX, 450, boxX - friction * forceScale, 450, '#4dabf7', 5);
+        drawTextLabel(ctx, `f=${friction.toFixed(1)}N`, boxX - friction * forceScale - 40, 440, '#4dabf7');
+    }
+}
+
+function initScene2() {
+    inclineAngle = 0; inclinePos = 200; inclineV = 0; inclineA = 0;
+    document.getElementById('angleSlider').value = 0; document.getElementById('angleSliderVal').innerText = '0°';
+}
+
+function updateScene2(dt) {
+    mass = baseMass + weightCount;
+    const G = mass * g;
+    const rad = inclineAngle * Math.PI / 180;
+    const N = G * Math.cos(rad);
+    const Gx = G * Math.sin(rad);
+    const f_max = mu_s * N;
+    const f_slide = mu_k * N;
+
+    if (Gx > f_max) {
+        inclineA = (Gx - f_slide) / mass;
+        inclineV += inclineA * dt;
+        inclinePos -= inclineV * dt * 20; 
+        if (inclinePos < 40) { inclinePos = 40; inclineV = 0; inclineA = 0; }
+    } else { inclineA = 0; inclineV = 0; }
+    
+    let friction = (Gx > f_max) ? f_slide : Gx;
+    let status = (Gx > f_max) ? '滑动' : '静止';
+    updateUI(0, friction, status, inclineA, inclineV, G, N);
+}
+
+function drawScene2() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const cx = 200, cy = 450;
+    const L = 400; 
+    const rad = inclineAngle * Math.PI / 180;
+    const topX = cx + L * Math.cos(rad);
+    const topY = cy - L * Math.sin(rad);
+
+    ctx.fillStyle = '#2b2b36'; ctx.fillRect(50, cy, 600, 50);
+    ctx.strokeStyle = '#6a6a75'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(50, cy); ctx.lineTo(650, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(topX, topY); ctx.lineTo(topX, cy); ctx.closePath();
+    const rampGrad = ctx.createLinearGradient(cx, cy, topX, topY);
+    rampGrad.addColorStop(0, '#3f3f4e'); rampGrad.addColorStop(1, '#5e3370');
+    ctx.fillStyle = rampGrad; ctx.fill(); ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 4; ctx.stroke();
+
+    const G = mass * g;
+    const N = G * Math.cos(rad);
+    const Gx = G * Math.sin(rad);
+    const f_max = mu_s * N;
+    const f_slide = mu_k * N;
+    let friction = (Gx > f_max) ? f_slide : Gx;
+
+    const boxW = 80, boxH = 60;
+
+    const Ux = Math.cos(rad), Uy = -Math.sin(rad);
+    const Vx = -Math.sin(rad), Vy = -Math.cos(rad);
+
+    const centerX = cx + inclinePos * Ux + (boxH/2) * Vx;
+    const centerY = cy + inclinePos * Uy + (boxH/2) * Vy;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(-rad);      
+    
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+    const grad = ctx.createLinearGradient(0, -boxH/2, 0, boxH/2);
+    grad.addColorStop(0, '#d4a373'); grad.addColorStop(1, '#8c5a35');
+    ctx.fillStyle = grad; ctx.fillRect(-boxW/2, -boxH/2, boxW, boxH);
+    ctx.strokeStyle = '#5c3a21'; ctx.lineWidth = 3; ctx.strokeRect(-boxW/2, -boxH/2, boxW, boxH);
+    for (let i = 0; i < weightCount; i++) {
+        ctx.fillStyle = '#adb5bd'; ctx.fillRect(-30 + i*20, -boxH/2 - 25, 15, 25);
+        ctx.strokeStyle = '#6c757d'; ctx.strokeRect(-30 + i*20, -boxH/2 - 25, 15, 25);
+    }
+    ctx.restore();
+
+    const forceScale = 8;
+
+    drawArrow(ctx, centerX, centerY, centerX, centerY + G * forceScale, '#ced4da', 4);
+    drawTextLabel(ctx, 'G', centerX, centerY + G * forceScale + 25, '#ced4da');
+
+    const N_endX = centerX + N * forceScale * Vx;
+    const N_endY = centerY + N * forceScale * Vy;
+    drawArrow(ctx, centerX, centerY, N_endX, N_endY, '#ff922b', 4);
+    drawTextLabel(ctx, 'N', N_endX + 20 * Vx, N_endY + 20 * Vy, '#ff922b');
+
+    const f_endX = centerX + friction * forceScale * Ux;
+    const f_endY = centerY + friction * forceScale * Uy;
+    drawArrow(ctx, centerX, centerY, f_endX, f_endY, '#4dabf7', 4);
+    drawTextLabel(ctx, 'f', f_endX + 20 * Ux, f_endY + 20 * Uy, '#4dabf7');
+
+    ctx.beginPath(); ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function loop(time) {
+    const dt = Math.min((time - lastTime) / 1000, 0.1); lastTime = time;
+    if (currentScene === 1) { updateScene1(dt); drawScene1(); } 
+    else { updateScene2(dt); drawScene2(); }
+    requestAnimationFrame(loop);
+}
+
+// ==========================================
+// 事件绑定优化（修复声音问题）
+// ==========================================
+
+// 切换场景
+document.querySelectorAll('.scene-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        // 初始化音频引擎
+        soundEngine.init();
+        document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentScene = parseInt(e.target.dataset.scene);
+        
+        if (currentScene === 1) {
+            document.getElementById('scene1-force-input').classList.remove('hidden');
+            document.getElementById('scene2-angle-input').classList.add('hidden');
+            initScene1();
+        } else {
+            document.getElementById('scene1-force-input').classList.add('hidden');
+            document.getElementById('scene2-angle-input').classList.remove('hidden');
+            initScene2();
+        }
+    });
+});
+
+// 材质切换
+document.querySelectorAll('[data-mat]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        soundEngine.init();
+        document.querySelectorAll('[data-mat]').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        const mat = e.target.dataset.mat;
+        if (mat === 'wood') { mu_s = 0.4; mu_k = 0.4; }
+        else if (mat === 'glass') { mu_s = 0.3; mu_k = 0.3; }
+        else if (mat === 'sand') { mu_s = 0.8; mu_k = 0.8; }
+        if (currentScene === 1) { v = 0; a = 0; } else { inclineV = 0; inclineA = 0; }
+    });
+});
+
+// 增减砝码
+document.getElementById('btnAddWeight').addEventListener('click', () => {
+    if (weightCount < 3) {
+        weightCount++; document.getElementById('massDisplay').innerText = (baseMass + weightCount).toFixed(1);
+        if (currentScene === 1) initScene1(); else initScene2();
+    }
+});
+document.getElementById('btnRemoveWeight').addEventListener('click', () => {
+    if (weightCount > 0) {
+        weightCount--; document.getElementById('massDisplay').innerText = (baseMass + weightCount).toFixed(1);
+        if (currentScene === 1) initScene1(); else initScene2();
+    }
+});
+
+// 斜面角度滑块
+document.getElementById('angleSlider').addEventListener('input', (e) => {
+    soundEngine.init();
+    inclineAngle = parseInt(e.target.value); document.getElementById('angleSliderVal').innerText = inclineAngle + '°';
+    inclineV = 0; inclineA = 0; inclinePos = 200; 
+});
+
+// ================= 核心修复点 =================
+// 拉力滑块：使用 input 和 touchstart 确保任何形式的交互都能激活音频
+const forceSlider = document.getElementById('forceSlider');
+forceSlider.addEventListener('input', () => { 
+    soundEngine.init(); // 每次拖动都确保音频引擎是活跃的
+});
+forceSlider.addEventListener('touchstart', () => { 
+    soundEngine.init(); 
+});
+forceSlider.addEventListener('mousedown', () => { 
+    soundEngine.init(); 
+});
+
+// 重置按钮
+document.getElementById('btnReset').addEventListener('click', () => {
+    soundEngine.init();
+    if (currentScene === 1) initScene1(); else initScene2();
+});
+
+// 页面首次点击也能激活音频（为了防止浏览器拦截）
+document.body.addEventListener('click', () => {
+    soundEngine.init();
+}, { once: true });
+
+// 启动
+initScene1();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
